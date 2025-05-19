@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Movie Finder (TMDb)</title>
+    <title>Movie Time (TMDb)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -109,8 +109,8 @@
 <body class="min-h-screen flex flex-col items-center pt-8 pb-12 px-4">
 
     <header class="mb-10 text-center">
-        <h1 class="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">Movie Finder</h1>
-        <p class="text-gray-400 mt-2">Find, sort, and page through movies using TMDb!</p>
+        <h1 class="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">Movie Time</h1>
+        <p class="text-gray-400 mt-2">Find movies that fit your schedule using TMDb!</p>
     </header>
 
     <main class="w-full max-w-6xl">
@@ -204,6 +204,7 @@
             findMoviesBtn.disabled = isLoading;
             prevPageBtn.disabled = isLoading;
             nextPageBtn.disabled = isLoading;
+            // Changed: Update button text during loading states
             findMoviesBtn.textContent = isLoading ? 'Searching...' : 'Search';
         }
 
@@ -241,11 +242,11 @@
             findMoviesBtn.disabled = false;
             clearFiltersBtn.disabled = false;
 
-            const originalButtonText = findMoviesBtn.textContent;
+            const originalButtonText = findMoviesBtn.textContent; // Will now be "Search" if HTML is updated
             const isButtonDisabled = findMoviesBtn.disabled;
             if (!isButtonDisabled) {
                 findMoviesBtn.disabled = true;
-                findMoviesBtn.textContent = 'Loading Genres...';
+                findMoviesBtn.textContent = 'Loading Genres...'; // This is a temporary specific state
             }
             clearError();
             try {
@@ -262,7 +263,8 @@
             } finally {
                  if (!isButtonDisabled) {
                     findMoviesBtn.disabled = false;
-                    findMoviesBtn.textContent = originalButtonText;
+                    // Restore to original text, which should be "Search" after HTML change
+                    findMoviesBtn.textContent = originalButtonText; 
                 }
             }
         }
