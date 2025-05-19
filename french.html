@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Français Pratique: Passé Composé ou Imparfait?</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            overscroll-behavior-y: contain;
+        }
+        .confetti-piece {
+            position: fixed;
+            width: 10px;
+            height: 20px;
+            background: #f00;
+            top: -20px;
+            opacity: 0;
+            z-index: 9999;
+        }
+        .confetti-piece.blue { background-color: #007bff; }
+        .confetti-piece.green { background-color: #28a745; }
+        .confetti-piece.yellow { background-color: #ffc107; }
+        .confetti-piece.purple { background-color: #6f42c1; }
+        .confetti-piece.orange { background-color: #fd7e14; }
+        .confetti-piece.pink { background-color: #e83e8c; }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-4px); }
+            75% { transform: translateX(4px); }
+        }
+        .shake-incorrect {
+            animation: shake 0.3s linear;
+        }
+
+        @keyframes pulse-correct {
+            0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(45, 211, 111, 0.7); }
+            50% { transform: scale(1.02); box-shadow: 0 0 0 6px rgba(45, 211, 111, 0); }
+        }
+        .pulse-correct {
+            animation: pulse-correct 0.4s ease-out;
+        }
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 flex flex-col items-center min-h-screen p-3 sm:p-4 selection:bg-sky-200">
+
+    <div class="w-full max-w-3xl bg-white shadow-2xl rounded-xl p-5 sm:p-8 my-auto">
+        <header class="mb-6 sm:mb-8 text-center relative">
+            <h1 id="main-title" class="text-3xl sm:text-4xl font-bold text-sky-700">Le Passé Composé et l'Imparfait</h1>
+            <p id="subtitle" class="text-slate-600 mt-2 text-sm sm:text-base">Choisissez le bon temps et conjuguez le verbe !</p>
+            <button id="language-toggle" class="absolute top-0 right-0 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs sm:text-sm font-medium py-1.5 px-3 rounded-md transition-colors">
+                English
+            </button>
+        </header>
+
+        <div class="mb-6 p-3 sm:p-4 bg-sky-50 border border-sky-200 rounded-lg shadow-sm">
+            <details>
+                <summary id="auxiliary-title" class="font-semibold text-sky-700 cursor-pointer hover:text-sky-800 transition-colors text-sm sm:text-base">
+                    Aide-mémoire : <span class="font-normal"><strong>Être</strong> et <strong>Avoir</strong> au présent</span> (pour le Passé Composé)
+                </summary>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-3 text-xs sm:text-sm">
+                    <div>
+                        <h4 id="auxiliary-avoir-heading" class="font-semibold text-sky-600 mb-1">Avoir (to have)</h4>
+                        <ul class="list-disc list-inside pl-2 space-y-0.5 text-slate-700">
+                            <li>j'<strong>ai</strong></li>
+                            <li>tu <strong>as</strong></li>
+                            <li>il/elle/on <strong>a</strong></li>
+                            <li>nous <strong>avons</strong></li>
+                            <li>vous <strong>avez</strong></li>
+                            <li>ils/elles <strong>ont</strong></li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 id="auxiliary-etre-heading" class="font-semibold text-sky-600 mb-1">Être (to be)</h4>
+                        <ul class="list-disc list-inside pl-2 space-y-0.5 text-slate-700">
+                            <li>je <strong>suis</strong></li>
+                            <li>tu <strong>es</strong></li>
+                            <li>il/elle/on <strong>est</strong></li>
+                            <li>nous <strong>sommes</strong></li>
+                            <li>vous <strong>êtes</strong></li>
+                            <li>ils/elles <strong>sont</strong></li>
+                        </ul>
+                    </div>
+                </div>
+            </details>
+        </div>
+
+        <div id="exercise-area" class="mb-5 sm:mb-6">
+            <p id="instruction-complete-sentence" class="text-base sm:text-lg mb-2 text-slate-700">Complétez la phrase :</p>
+            <div id="sentence-container" class="text-lg sm:text-xl p-3 sm:p-4 bg-slate-50 rounded-md border border-slate-300 flex flex-wrap items-center gap-x-2 gap-y-1">
+                <span id="sentence-start"></span>
+                <input type="text" id="answer-input" class="flex-grow p-2 border border-slate-400 rounded-md focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-all min-w-[120px] sm:min-w-[150px] text-base sm:text-lg" placeholder="verbe conjugué" autocapitalize="none" autocomplete="off">
+                <span id="verb-infinitive-display" class="text-sky-600 font-medium text-base sm:text-lg"></span>
+                <span id="sentence-end"></span>
+            </div>
+        </div>
+
+        <div class="flex flex-col sm:flex-row gap-2 sm:gap-3 mb-5 sm:mb-6">
+            <button id="check-button" class="flex-1 bg-sky-600 hover:bg-sky-700 text-white font-semibold py-2.5 px-4 rounded-lg transition-all duration-150 ease-in-out shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 active:bg-sky-800">
+                Vérifier
+            </button>
+            <button id="next-button" class="flex-1 bg-slate-500 hover:bg-slate-600 text-white font-semibold py-2.5 px-4 rounded-lg transition-all duration-150 ease-in-out shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 active:bg-slate-700">
+                Suivant
+            </button>
+        </div>
+
+        <div id="feedback-area" class="p-3 sm:p-4 rounded-lg min-h-[110px] text-slate-50 transition-all duration-300 ease-in-out shadow">
+            </div>
+
+         <div id="explanation-guide" class="mt-6 sm:mt-8 p-3 sm:p-4 bg-amber-50 border border-amber-200 rounded-lg shadow-sm text-xs sm:text-sm">
+            <h3 id="guide-title" class="font-semibold text-amber-800 text-base sm:text-lg mb-2">Quand utiliser quel temps ?</h3>
+            <div class="text-amber-700 space-y-2">
+                <p id="guide-pc-desc"><strong>Passé Composé :</strong> Actions spécifiques, complétées, ou des événements principaux. <br><em><span id="guide-pc-clues-label">Indices</span> : hier, soudain, une fois, l'année dernière, d'abord, puis.</em></p>
+                <p id="guide-imparfait-desc"><strong>Imparfait :</strong> Descriptions, habitudes, actions en cours dans le passé, ou le décor. <br><em><span id="guide-imparfait-clues-label">Indices</span> : souvent, toujours, tous les jours, pendant que, quand j'étais jeune, chaque fois.</em></p>
+                <p id="guide-warning-title" class="mt-2 font-medium text-red-700">🚫 Erreur fréquente à éviter :</p>
+                <p id="guide-warning-desc" class="text-slate-700">Ne mélangez pas l'auxiliaire du Passé Composé avec une terminaison de l'Imparfait ! <br>
+                    <span id="guide-warning-incorrect">Incorrect</span> : <code class="bg-red-100 text-red-700 p-0.5 rounded">nous avons regardions</code> ❌<br>
+                    <span id="guide-warning-correct-pc">Correct (PC)</span> : <code class="bg-green-100 text-green-700 p-0.5 rounded">nous avons regardé</code> ✅<br>
+                    <span id="guide-warning-correct-imp">Correct (Imp.)</span> : <code class="bg-green-100 text-green-700 p-0.5 rounded">nous regardions</code> ✅
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <footer class="text-center mt-8 mb-4 text-xs sm:text-sm text-slate-500">
+        <p>&copy; <span id="currentYear"></span> <span id="footer-text">Apprentissage du Français Interactif</span>. Tous droits réservés.</p>
+    </footer>
+
+    <script>
+        // --- UI Strings for Localization ---
+        const uiStrings = {
+            fr: {
+                appTitleTag: "Français Pratique: Passé Composé ou Imparfait?",
+                mainTitle: "Le Passé Composé et l'Imparfait",
+                subtitle: "Choisissez le bon temps et conjuguez le verbe !",
+                languageToggle: "English",
+                auxiliaryTitleSummary: "Aide-mémoire : ",
+                auxiliaryTitleSpan: "<span class=\"font-normal\"><strong>Être</strong> et <strong>Avoir</strong> au présent</span> (pour le Passé Composé)",
+                auxiliaryAvoirHeading: "Avoir (to have)",
+                auxiliaryEtreHeading: "Être (to be)",
+                instructionCompleteSentence: "Complétez la phrase :",
+                answerInputPlaceholder: "verbe conjugué",
+                checkButton: "Vérifier",
+                nextButtonDefault: "Suivant",
+                nextButtonRestart: "Recommencer",
+                feedbackCorrectStrong: "🎉 Correct !",
+                feedbackCorrectText: "La réponse est bien",
+                feedbackIncorrectStrong: "🤔 Incorrect.",
+                feedbackIncorrectText: "La bonne réponse est",
+                feedbackFormationLabel: "Formation",
+                feedbackFormationExpectedLabel: "Formation attendue",
+                feedbackHintLabel: "Indice",
+                feedbackHintWrongAuxEtre: "Ce verbe ({verb}) utilise l'auxiliaire 'être' au Passé Composé, pas 'avoir'.",
+                feedbackHintWrongAuxAvoir: "Ce verbe ({verb}) utilise l'auxiliaire 'avoir' au Passé Composé, pas 'être'.",
+                feedbackHintPCParticipe: "L'auxiliaire est correct, mais vérifiez le participe passé de '{verb}'. N'oubliez pas l'accord si c'est un verbe avec 'être' !",
+                feedbackHintPCTense: "Le contexte suggère une action ponctuelle ou terminée (Passé Composé), pas une description ou habitude (Imparfait).",
+                feedbackHintImparfaitTense: "Le contexte suggère une description, une habitude ou une action en cours (Imparfait), pas une action ponctuelle (Passé Composé).",
+                feedbackHintMixedTense: "Attention à ne pas mélanger les formes ! On ne combine pas l'auxiliaire 'avoir' avec une terminaison de l'imparfait. Revoyez la section \"Erreur fréquente\".",
+                feedbackEmptyInput: "Attention ! Veuillez entrer une réponse.",
+                feedbackAllDoneStrong: "🎉 Bravo !",
+                feedbackAllDoneText: "Vous avez terminé tous les exercices.",
+                feedbackAllDoneReload: "Rechargez la page pour une nouvelle série d'exercices.",
+                guideTitle: "Quand utiliser quel temps ?",
+                guidePCDesc: "<strong>Passé Composé :</strong> Actions spécifiques, complétées, ou des événements principaux. <br><em><span id='guide-pc-clues-label-inner'>Indices</span> : hier, soudain, une fois, l'année dernière, d'abord, puis.</em>",
+                guideImparfaitDesc: "<strong>Imparfait :</strong> Descriptions, habitudes, actions en cours dans le passé, ou le décor. <br><em><span id='guide-imparfait-clues-label-inner'>Indices</span> : souvent, toujours, tous les jours, pendant que, quand j'étais jeune, chaque fois.</em>",
+                guideWarningTitle: "🚫 Erreur fréquente à éviter :",
+                guideWarningDesc: "Ne mélangez pas l'auxiliaire du Passé Composé avec une terminaison de l'Imparfait ! <br><span id='guide-warning-incorrect-inner'>Incorrect</span> : <code class=\"bg-red-100 text-red-700 p-0.5 rounded\">nous avons regardions</code> ❌<br><span id='guide-warning-correct-pc-inner'>Correct (PC)</span> : <code class=\"bg-green-100 text-green-700 p-0.5 rounded\">nous avons regardé</code> ✅<br><span id='guide-warning-correct-imp-inner'>Correct (Imp.)</span> : <code class=\"bg-green-100 text-green-700 p-0.5 rounded\">nous regardions</code> ✅",
+                footerText: "Apprentissage du Français Interactif"
+            },
+            en: {
+                appTitleTag: "French Practice: Passé Composé or Imparfait?",
+                mainTitle: "Passé Composé and Imparfait",
+                subtitle: "Choose the correct tense and conjugate the verb!",
+                languageToggle: "Français",
+                auxiliaryTitleSummary: "Reminder: ",
+                auxiliaryTitleSpan: "<span class=\"font-normal\"><strong>Être</strong> and <strong>Avoir</strong> in present tense</span> (for Passé Composé)",
+                auxiliaryAvoirHeading: "Avoir (to have)",
+                auxiliaryEtreHeading: "Être (to be)",
+                instructionCompleteSentence: "Complete the sentence:",
+                answerInputPlaceholder: "conjugated verb",
+                checkButton: "Check",
+                nextButtonDefault: "Next",
+                nextButtonRestart: "Restart",
+                feedbackCorrectStrong: "🎉 Correct!",
+                feedbackCorrectText: "The answer is indeed",
+                feedbackIncorrectStrong: "🤔 Incorrect.",
+                feedbackIncorrectText: "The correct answer is",
+                feedbackFormationLabel: "Formation",
+                feedbackFormationExpectedLabel: "Expected formation",
+                feedbackHintLabel: "Hint",
+                feedbackHintWrongAuxEtre: "This verb ({verb}) uses the auxiliary 'être' in Passé Composé, not 'avoir'.",
+                feedbackHintWrongAuxAvoir: "This verb ({verb}) uses the auxiliary 'avoir' in Passé Composé, not 'être'.",
+                feedbackHintPCParticipe: "The auxiliary is correct, but check the past participle of '{verb}'. Don't forget agreement if it's a verb with 'être'!",
+                feedbackHintPCTense: "The context suggests a specific or completed action (Passé Composé), not a description or habit (Imparfait).",
+                feedbackHintImparfaitTense: "The context suggests a description, a habit, or an ongoing action (Imparfait), not a specific action (Passé Composé).",
+                feedbackHintMixedTense: "Be careful not to mix forms! We don't combine the 'avoir' auxiliary with an Imparfait ending. Review the \"Common mistake\" section.",
+                feedbackEmptyInput: "Attention! Please enter an answer.",
+                feedbackAllDoneStrong: "🎉 Well done!",
+                feedbackAllDoneText: "You have completed all exercises.",
+                feedbackAllDoneReload: "Reload the page for a new set of exercises.",
+                guideTitle: "When to use which tense?",
+                guidePCDesc: "<strong>Passé Composé:</strong> Specific, completed actions, or main events. <br><em><span id='guide-pc-clues-label-inner'>Clues</span>: yesterday, suddenly, once, last year, first, then.</em>",
+                guideImparfaitDesc: "<strong>Imparfait:</strong> Descriptions, habits, ongoing actions in the past, or background setting. <br><em><span id='guide-imparfait-clues-label-inner'>Clues</span>: often, always, every day, while, when I was young, each time.</em>",
+                guideWarningTitle: "🚫 Common mistake to avoid:",
+                guideWarningDesc: "Don't mix the Passé Composé auxiliary with an Imparfait ending! <br><span id='guide-warning-incorrect-inner'>Incorrect</span>: <code class=\"bg-red-100 text-red-700 p-0.5 rounded\">nous avons regardions</code> ❌<br><span id='guide-warning-correct-pc-inner'>Correct (PC)</span>: <code class=\"bg-green-100 text-green-700 p-0.5 rounded\">nous avons regardé</code> ✅<br><span id='guide-warning-correct-imp-inner'>Correct (Imp.)</span>: <code class=\"bg-green-100 text-green-700 p-0.5 rounded\">nous regardions</code> ✅",
+                footerText: "Interactive French Learning"
+            }
+        };
+
+        let currentLanguage = 'fr'; // Default language
+
+        // --- Exercise Data (Stays in French as it's the learning content) ---
+        const exercises = [
+             {
+                sentence_start: "Hier soir, nous",
+                verb_infinitive: "manger",
+                sentence_end: "une quiche lorraine.",
+                correct_answer: "avons mangé",
+                tense: "Passé Composé",
+                explanation: "L'indice 'Hier soir' indique une action spécifique et terminée dans le passé. 'Manger' se conjugue avec 'avoir' au Passé Composé.",
+                auxiliary_info: "Pour 'nous', l'auxiliaire 'avoir' est 'avons'. Le participe passé de 'manger' est 'mangé'."
+            },
+            {
+                sentence_start: "Quand j'étais enfant, je",
+                verb_infinitive: "jouer",
+                sentence_end: "souvent avec mes cousins.",
+                correct_answer: "jouais",
+                tense: "Imparfait",
+                explanation: "Les expressions 'Quand j'étais enfant' et 'souvent' indiquent une habitude dans le passé.",
+                auxiliary_info: "Pour former l'imparfait de 'jouer' avec 'je', on prend la base de 'nous jouons' (jou-) et on ajoute la terminaison '-ais'."
+            },
+            {
+                sentence_start: "Soudain, le chat",
+                verb_infinitive: "sauter",
+                sentence_end: "sur la table.",
+                correct_answer: "a sauté",
+                tense: "Passé Composé",
+                explanation: "'Soudain' (suddenly) marque une action ponctuelle qui interrompt ou survient rapidement.",
+                auxiliary_info: "'Sauter' se conjugue avec 'avoir'. Pour 'le chat' (il), c'est 'a'. Participe passé : 'sauté'."
+            },
+            {
+                sentence_start: "Elle",
+                verb_infinitive: "être",
+                sentence_end: "toujours très polie avec tout le monde.",
+                correct_answer: "était",
+                tense: "Imparfait",
+                explanation: "L'imparfait est utilisé ici pour décrire une caractéristique habituelle ou un état d'être dans le passé ('toujours').",
+                auxiliary_info: "L'imparfait du verbe 'être' avec 'elle' est 'était'."
+            },
+            {
+                sentence_start: "L'été dernier, mes amis et moi,",
+                verb_infinitive: "aller",
+                sentence_end: "à la plage chaque semaine.",
+                correct_answer: "allions",
+                tense: "Imparfait",
+                explanation: "'Chaque semaine' pendant 'l'été dernier' décrit une action répétée, une habitude dans une période passée. C'est donc l'Imparfait.",
+                auxiliary_info: "Pour 'aller' à l'imparfait avec 'nous' (mes amis et moi), on prend la base de 'nous allons' (all-) et on ajoute la terminaison '-ions'."
+            },
+            {
+                sentence_start: "Ce matin, tu",
+                verb_infinitive: "arriver",
+                sentence_end: "en retard à l'école.",
+                correct_answer: "es arrivé", // Assuming 'tu' is male. Could be 'arrivée' if female.
+                tense: "Passé Composé",
+                explanation: "'Ce matin' indique une action spécifique et complétée. 'Arriver' se conjugue avec 'être'. Le participe passé s'accorde si le contexte le précise (ici, on suppose masculin singulier par défaut).",
+                auxiliary_info: "Pour 'tu', l'auxiliaire 'être' est 'es'. Participe passé: 'arrivé'. Si 'tu' est féminin, ce serait 'es arrivée'."
+            },
+            {
+                sentence_start: "Pendant que Marie",
+                verb_infinitive: "étudier",
+                sentence_end: ", son frère écoutait de la musique.",
+                correct_answer: "étudiait",
+                tense: "Imparfait",
+                explanation: "'Pendant que' introduit deux actions simultanées et continues dans le passé.",
+                auxiliary_info: "Pour 'étudier' à l'imparfait avec 'Marie' (elle), base de 'nous étudions' (étudi-) + '-ait'."
+            },
+            {
+                sentence_start: "Vous",
+                verb_infinitive: "finir",
+                sentence_end: "déjà ce livre la semaine passée ?",
+                correct_answer: "avez fini",
+                tense: "Passé Composé",
+                explanation: "'La semaine passée' et l'idée d'achèvement ('déjà') pointent vers le Passé Composé. 'Finir' utilise 'avoir'.",
+                auxiliary_info: "Pour 'vous', auxiliaire 'avoir' est 'avez'. Participe passé de 'finir' : 'fini'."
+            },
+            {
+                sentence_start: "Les filles",
+                verb_infinitive: "rentrer",
+                sentence_end: "tard hier soir.",
+                correct_answer: "sont rentrées",
+                tense: "Passé Composé",
+                explanation: "'Hier soir' indique une action complétée. 'Rentrer' utilise 'être'. Le participe passé 'rentré' s'accorde avec 'les filles' (féminin pluriel).",
+                auxiliary_info: "Pour 'elles' (les filles), auxiliaire 'être' est 'sont'. Participe passé 'rentré' + 'es' pour l'accord : 'rentrées'."
+            },
+            {
+                sentence_start: "Autrefois, les gens",
+                verb_infinitive: "écrire",
+                sentence_end: "des lettres plus souvent.",
+                correct_answer: "écrivaient",
+                tense: "Imparfait",
+                explanation: "'Autrefois' (in the old days/formerly) et 'plus souvent' indiquent une habitude passée.",
+                auxiliary_info: "Pour 'écrire' à l'imparfait avec 'les gens' (ils/elles), base de 'nous écrivons' (écriv-) + '-aient'."
+            },
+            {
+                sentence_start: "Il",
+                verb_infinitive: "pleuvoir",
+                sentence_end: "quand nous sommes sortis.",
+                correct_answer: "pleuvait",
+                tense: "Imparfait",
+                explanation: "L'imparfait est utilisé pour décrire une condition météorologique ou une situation en cours (le décor) quand une autre action (Passé Composé: 'sommes sortis') s'est produite.",
+                auxiliary_info: "Le verbe impersonnel 'pleuvoir' à l'imparfait à la 3ème personne du singulier ('il') est 'pleuvait'."
+            },
+            {
+                sentence_start: "J'",
+                verb_infinitive: "avoir",
+                sentence_end: "très faim après la randonnée.",
+                correct_answer: "ai eu",
+                tense: "Passé Composé",
+                explanation: "Décrit un état résultant d'une action complétée (la randonnée). 'Avoir faim' au passé pour un moment spécifique.",
+                auxiliary_info: "Le verbe 'avoir' se conjugue avec lui-même comme auxiliaire au Passé Composé. Pour 'je', c'est 'ai'. Participe passé de 'avoir' : 'eu'."
+            },
+            {
+                sentence_start: "Chaque dimanche matin, mon grand-père nous",
+                verb_infinitive: "raconter",
+                sentence_end: "des histoires de sa jeunesse.",
+                correct_answer: "racontait",
+                tense: "Imparfait",
+                explanation: "'Chaque dimanche matin' indique une action habituelle et répétée dans le passé.",
+                auxiliary_info: "Pour 'raconter' à l'imparfait avec 'il' (mon grand-père), on prend la base de 'nous racontons' (racont-) et on ajoute la terminaison '-ait'."
+            },
+            {
+                sentence_start: "La semaine dernière, j'",
+                verb_infinitive: "voir",
+                sentence_end: "un film très intéressant au cinéma.",
+                correct_answer: "ai vu",
+                tense: "Passé Composé",
+                explanation: "'La semaine dernière' spécifie un moment précis pour une action complétée.",
+                auxiliary_info: "'Voir' utilise 'avoir'. Pour 'je', c'est 'ai'. Participe passé : 'vu'."
+            },
+            {
+                sentence_start: "Quand nous",
+                verb_infinitive: "entrer",
+                sentence_end: "dans la salle, tout le monde nous regardait.",
+                correct_answer: "sommes entrés", 
+                tense: "Passé Composé",
+                explanation: "L'action d'entrer est ponctuelle et a eu lieu avant que les gens ne regardent (qui est une description/action en cours à ce moment-là). 'Entrer' utilise 'être'.",
+                auxiliary_info: "Pour 'nous', auxiliaire 'être' est 'sommes'. Participe passé 'entré' + 's' pour accord (masculin pluriel/mixte par défaut)."
+            },
+            {
+                sentence_start: "Le ciel",
+                verb_infinitive: "être",
+                sentence_end: "bleu et le soleil brillait fort ce jour-là.",
+                correct_answer: "était",
+                tense: "Imparfait",
+                explanation: "Description du temps et de l'atmosphère dans le passé.",
+                auxiliary_info: "L'imparfait de 'être' avec 'le ciel' (il) est 'était'."
+            },
+            {
+                sentence_start: "En 1998, l'équipe de France",
+                verb_infinitive: "gagner",
+                sentence_end: "la Coupe du Monde de football.",
+                correct_answer: "a gagné",
+                tense: "Passé Composé",
+                explanation: "Un événement spécifique et daté dans le passé.",
+                auxiliary_info: "'Gagner' utilise 'avoir'. Pour 'elle' (l'équipe), c'est 'a'. Participe passé : 'gagné'."
+            },
+            {
+                sentence_start: "Tous les soirs, avant de dormir, elle",
+                verb_infinitive: "lire",
+                sentence_end: "quelques pages d'un roman.",
+                correct_answer: "lisait",
+                tense: "Imparfait",
+                explanation: "'Tous les soirs' indique une habitude passée.",
+                auxiliary_info: "Pour 'lire' à l'imparfait avec 'elle', base de 'nous lisons' (lis-) + '-ait'."
+            },
+            {
+                sentence_start: "Hier, pendant que je",
+                verb_infinitive: "faire",
+                sentence_end: "mes devoirs, mon ami m'a téléphoné.",
+                correct_answer: "faisais",
+                tense: "Imparfait",
+                explanation: "L'action de faire les devoirs était en cours ('pendant que') lorsqu'une autre action ponctuelle (téléphoner - Passé Composé) s'est produite.",
+                auxiliary_info: "Pour 'faire' à l'imparfait avec 'je', base de 'nous faisons' (fais-) + '-ais'."
+            },
+            {
+                sentence_start: "Mes parents",
+                verb_infinitive: "naître",
+                sentence_end: "dans la même petite ville.",
+                correct_answer: "sont nés", 
+                tense: "Passé Composé",
+                explanation: "L'action de naître est un événement ponctuel dans le passé, même si c'est un état qui perdure. 'Naître' utilise 'être'.",
+                auxiliary_info: "Pour 'ils' (mes parents), auxiliaire 'être' est 'sont'. Participe passé 'né' + 's' pour accord (masculin pluriel/mixte)."
+            },
+            {
+                sentence_start: "Quand tu étais à Paris, est-ce que tu",
+                verb_infinitive: "visiter",
+                sentence_end: "souvent le Louvre ?",
+                correct_answer: "visitais",
+                tense: "Imparfait",
+                explanation: "La question porte sur une habitude ('souvent') pendant une période passée ('Quand tu étais à Paris').",
+                auxiliary_info: "Pour 'visiter' à l'imparfait avec 'tu', base de 'nous visitons' (visit-) + '-ais'."
+            },
+            {
+                sentence_start: "Dès que le professeur",
+                verb_infinitive: "poser",
+                sentence_end: "la question, j'ai levé la main.",
+                correct_answer: "a posé",
+                tense: "Passé Composé",
+                explanation: "L'action de poser la question est un événement antérieur et ponctuel qui déclenche une autre action (Passé Composé 'ai levé'). 'Dès que' (as soon as) introduit souvent un Passé Composé.",
+                auxiliary_info: "'Poser' utilise 'avoir'. Pour 'il' (le professeur), c'est 'a'. Participe passé : 'posé'."
+            },
+            {
+                sentence_start: "Avant, les enfants",
+                verb_infinitive: "passer",
+                sentence_end: "plus de temps à jouer dehors.",
+                correct_answer: "passaient",
+                tense: "Imparfait",
+                explanation: "'Avant' (before/in the past) indique une habitude ou un état général dans le passé qui n'est plus vrai.",
+                auxiliary_info: "Pour 'passer' à l'imparfait avec 'ils' (les enfants), base de 'nous passons' (pass-) + '-aient'."
+            },
+            {
+                sentence_start: "Elle",
+                verb_infinitive: "recevoir",
+                sentence_end: "une belle surprise pour son anniversaire la semaine dernière.",
+                correct_answer: "a reçu",
+                tense: "Passé Composé",
+                explanation: "'La semaine dernière' indique une action spécifique et complétée.",
+                auxiliary_info: "'Recevoir' utilise 'avoir'. Pour 'elle', c'est 'a'. Participe passé : 'reçu'."
+            }
+        ];
+
+        let currentExerciseIndex = 0;
+        let exercisesShuffled = [];
+
+        // --- DOM Elements ---
+        const mainTitleEl = document.getElementById('main-title');
+        const subtitleEl = document.getElementById('subtitle');
+        const languageToggleEl = document.getElementById('language-toggle');
+        const auxiliaryTitleEl = document.getElementById('auxiliary-title');
+        const auxiliaryAvoirHeadingEl = document.getElementById('auxiliary-avoir-heading');
+        const auxiliaryEtreHeadingEl = document.getElementById('auxiliary-etre-heading');
+        const instructionCompleteSentenceEl = document.getElementById('instruction-complete-sentence');
+        const sentenceStartEl = document.getElementById('sentence-start');
+        const verbInfinitiveDisplayEl = document.getElementById('verb-infinitive-display');
+        const sentenceEndEl = document.getElementById('sentence-end');
+        const answerInputEl = document.getElementById('answer-input');
+        const checkButtonEl = document.getElementById('check-button');
+        const nextButtonEl = document.getElementById('next-button');
+        const feedbackAreaEl = document.getElementById('feedback-area');
+        const currentYearEl = document.getElementById('currentYear');
+        const guideTitleEl = document.getElementById('guide-title');
+        const guidePCDescEl = document.getElementById('guide-pc-desc');
+        const guideImparfaitDescEl = document.getElementById('guide-imparfait-desc');
+        const guideWarningTitleEl = document.getElementById('guide-warning-title');
+        const guideWarningDescEl = document.getElementById('guide-warning-desc');
+        const footerTextEl = document.getElementById('footer-text');
+        
+        currentYearEl.textContent = new Date().getFullYear();
+
+        // --- Localization Function ---
+        function updateUIText() {
+            const s = uiStrings[currentLanguage];
+            document.title = s.appTitleTag;
+            mainTitleEl.textContent = s.mainTitle;
+            subtitleEl.textContent = s.subtitle;
+            languageToggleEl.textContent = s.languageToggle;
+            auxiliaryTitleEl.innerHTML = s.auxiliaryTitleSummary + s.auxiliaryTitleSpan;
+            auxiliaryAvoirHeadingEl.textContent = s.auxiliaryAvoirHeading;
+            auxiliaryEtreHeadingEl.textContent = s.auxiliaryEtreHeading;
+            instructionCompleteSentenceEl.textContent = s.instructionCompleteSentence;
+            answerInputEl.placeholder = s.answerInputPlaceholder;
+            checkButtonEl.textContent = s.checkButton; 
+            guideTitleEl.textContent = s.guideTitle;
+            guidePCDescEl.innerHTML = s.guidePCDesc;
+            guideImparfaitDescEl.innerHTML = s.guideImparfaitDesc;
+            guideWarningTitleEl.innerHTML = s.guideWarningTitle;
+            guideWarningDescEl.innerHTML = s.guideWarningDesc;
+            footerTextEl.textContent = s.footerText;
+
+            const allExercisesDone = answerInputEl.disabled &&
+                                   checkButtonEl.disabled &&
+                                   currentExerciseIndex >= exercisesShuffled.length &&
+                                   exercisesShuffled.length > 0;
+
+            if (allExercisesDone) {
+                nextButtonEl.textContent = s.nextButtonRestart;
+                nextButtonEl.onclick = () => window.location.reload();
+                nextButtonEl.disabled = false; 
+
+                feedbackAreaEl.innerHTML = `<div class="bg-sky-500 text-white p-3 sm:p-4 rounded-lg shadow-md">
+                    <p class="font-semibold text-lg">${s.feedbackAllDoneStrong}</p>
+                    <p class="text-sm">${s.feedbackAllDoneText}</p>
+                    <p class="text-sm mt-1">${s.feedbackAllDoneReload}</p>
+                </div>`;
+            } else {
+                nextButtonEl.textContent = s.nextButtonDefault;
+                nextButtonEl.onclick = goToNextExercise; 
+                if (checkButtonEl.disabled) { 
+                    nextButtonEl.disabled = false;
+                } else { 
+                    nextButtonEl.disabled = true;
+                }
+            }
+        }
+
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        function loadExercise(index) {
+            feedbackAreaEl.innerHTML = '';
+            feedbackAreaEl.className = 'p-3 sm:p-4 rounded-lg min-h-[110px] text-slate-50 transition-all duration-300 ease-in-out shadow';
+            answerInputEl.classList.remove('shake-incorrect', 'pulse-correct', 'border-red-500', 'border-green-500', 'focus:ring-red-500', 'focus:ring-green-500', 'border-yellow-500', 'focus:ring-yellow-500');
+            answerInputEl.classList.add('border-slate-400', 'focus:ring-sky-500');
+            
+            const s = uiStrings[currentLanguage]; 
+
+            if (index < 0 || index >= exercisesShuffled.length) {
+                feedbackAreaEl.innerHTML = `<div class="bg-sky-500 text-white p-3 sm:p-4 rounded-lg shadow-md">
+                    <p class="font-semibold text-lg">${s.feedbackAllDoneStrong}</p>
+                    <p class="text-sm">${s.feedbackAllDoneText}</p>
+                    <p class="text-sm mt-1">${s.feedbackAllDoneReload}</p>
+                </div>`;
+                checkButtonEl.disabled = true;
+                answerInputEl.disabled = true; 
+
+                nextButtonEl.textContent = s.nextButtonRestart; 
+                nextButtonEl.onclick = () => window.location.reload(); 
+                nextButtonEl.disabled = false; 
+                
+                triggerConfetti(250, 3500); 
+                return; 
+            }
+
+            const exercise = exercisesShuffled[index];
+            sentenceStartEl.textContent = exercise.sentence_start;
+            verbInfinitiveDisplayEl.textContent = `(${exercise.verb_infinitive})`;
+            sentenceEndEl.textContent = exercise.sentence_end;
+            answerInputEl.value = ''; 
+            answerInputEl.disabled = false; 
+            checkButtonEl.disabled = false; 
+            
+            nextButtonEl.textContent = s.nextButtonDefault; 
+            nextButtonEl.onclick = goToNextExercise; 
+            nextButtonEl.disabled = true; 
+
+            answerInputEl.focus(); 
+        }
+
+        // --- Function to normalize answers (remove extra spaces, convert to lowercase, remove accents) ---
+        function normalizeAnswer(answer) {
+            return answer
+                .trim()
+                .toLowerCase()
+                .replace(/[éèêë]/g, 'e') // Normalize e accents
+                .replace(/[àâä]/g, 'a')  // Normalize a accents (added ä for completeness, though less common in verbs)
+                .replace(/[îï]/g, 'i')   // Normalize i accents
+                .replace(/[ôö]/g, 'o')   // Normalize o accents (added ö)
+                .replace(/[ûüù]/g, 'u')  // Normalize u accents (added ù)
+                .replace(/ç/g, 'c')    // Normalize c cedilla
+                .replace(/\s+/g, ' '); // Collapse multiple spaces to one
+        }
+
+        function checkAnswer() {
+            const s = uiStrings[currentLanguage]; 
+            if (answerInputEl.value.trim() === "") {
+                 feedbackAreaEl.className = 'p-3 sm:p-4 rounded-lg bg-yellow-400 text-yellow-900 shadow';
+                 feedbackAreaEl.innerHTML = `<strong class="text-base">${s.feedbackEmptyInput}</strong>`;
+                 answerInputEl.classList.add('border-yellow-500', 'focus:ring-yellow-500');
+                 answerInputEl.focus();
+                return; 
+            }
+
+            const userAnswer = normalizeAnswer(answerInputEl.value); // User answer is normalized
+            const currentExercise = exercisesShuffled[currentExerciseIndex];
+            const correctAnswer = normalizeAnswer(currentExercise.correct_answer); // Correct answer is also normalized for comparison
+
+            answerInputEl.classList.remove('shake-incorrect', 'pulse-correct', 'border-red-500', 'border-green-500', 'focus:ring-red-500', 'focus:ring-green-500', 'border-yellow-500', 'focus:ring-yellow-500');
+            answerInputEl.classList.remove('border-slate-400', 'focus:ring-sky-500');
+
+            // Display the original correct answer (with accents) in the feedback, not the normalized one.
+            const displayCorrectAnswer = currentExercise.correct_answer; 
+
+            if (userAnswer === correctAnswer) {
+                feedbackAreaEl.className = 'p-3 sm:p-4 rounded-lg bg-green-600 text-white shadow-lg';
+                feedbackAreaEl.innerHTML = `
+                    <strong class="text-lg block mb-1">${s.feedbackCorrectStrong}</strong>
+                    ${s.feedbackCorrectText} <strong>${displayCorrectAnswer}</strong> (${currentExercise.tense}).
+                    <p class="mt-1.5 text-sm text-green-50">${currentExercise.explanation}</p> 
+                    <p class="mt-1 text-xs text-green-100 italic">${s.feedbackFormationLabel}: ${currentExercise.auxiliary_info}</p> 
+                `;
+                answerInputEl.classList.add('border-green-500', 'focus:ring-green-500', 'pulse-correct');
+                triggerConfetti(60, 1800); 
+            } else {
+                feedbackAreaEl.className = 'p-3 sm:p-4 rounded-lg bg-red-600 text-white shadow-lg';
+                let specificHint = ""; 
+                const userParts = userAnswer.split(" "); // Normalized user answer parts
+                const correctPartsForHint = normalizeAnswer(currentExercise.correct_answer).split(" "); // Normalized correct answer parts for hint logic
+
+                // Hint logic based on normalized parts
+                if (userParts.length > 1 && correctPartsForHint.length > 1) { 
+                    if ( (userParts[0] === "ai" || userParts[0] === "as" || userParts[0] === "a" || userParts[0] === "avons" || userParts[0] === "avez" || userParts[0] === "ont") &&
+                         (correctPartsForHint[0] === "suis" || correctPartsForHint[0] === "es" || correctPartsForHint[0] === "est" || correctPartsForHint[0] === "sommes" || correctPartsForHint[0] === "êtes" || correctPartsForHint[0] === "sont") ) {
+                        specificHint = `<p class="mt-1 text-xs text-red-100"><em>${s.feedbackHintLabel}: ${s.feedbackHintWrongAuxEtre.replace('{verb}', currentExercise.verb_infinitive)}</em></p>`;
+                    } else if ( (userParts[0] === "suis" || userParts[0] === "es" || userParts[0] === "est" || userParts[0] === "sommes" || userParts[0] === "êtes" || userParts[0] === "sont") &&
+                                (correctPartsForHint[0] === "ai" || correctPartsForHint[0] === "as" || correctPartsForHint[0] === "a" || correctPartsForHint[0] === "avons" || correctPartsForHint[0] === "avez" || correctPartsForHint[0] === "ont") ) {
+                        specificHint = `<p class="mt-1 text-xs text-red-100"><em>${s.feedbackHintLabel}: ${s.feedbackHintWrongAuxAvoir.replace('{verb}', currentExercise.verb_infinitive)}</em></p>`;
+                    } else if (userParts[0] === correctPartsForHint[0] && userParts[1] !== correctPartsForHint[1]) {
+                         specificHint = `<p class="mt-1 text-xs text-red-100"><em>${s.feedbackHintLabel}: ${s.feedbackHintPCParticipe.replace('{verb}', currentExercise.verb_infinitive)}</em></p>`;
+                    }
+                } else if (userAnswer.match(/(ais|ait|ions|iez|aient)$/) && correctAnswer.includes(" ")) { // User gave imparfait (normalized), PC expected (normalized check)
+                     specificHint = `<p class="mt-1 text-xs text-red-100"><em>${s.feedbackHintLabel}: ${s.feedbackHintPCTense}</em></p>`;
+                } else if (userAnswer.includes(" ") && !correctAnswer.includes(" ")) { // User gave PC (normalized), imparfait expected (normalized check)
+                     specificHint = `<p class="mt-1 text-xs text-red-100"><em>${s.feedbackHintLabel}: ${s.feedbackHintImparfaitTense}</em></p>`;
+                }
+
+                const mixedTensePattern = /^(ai|as|a|avons|avez|ont)\s+\w+(ais|ait|ions|iez|aient)$/;
+                if (mixedTensePattern.test(userAnswer)) { // Check normalized user answer
+                    specificHint += `<p class="mt-1 text-xs text-red-100"><em>${s.feedbackHintMixedTense}</em></p>`;
+                }
+
+                feedbackAreaEl.innerHTML = `
+                    <strong class="text-lg block mb-1">${s.feedbackIncorrectStrong}</strong>
+                    ${s.feedbackIncorrectText} <strong>${displayCorrectAnswer}</strong> (${currentExercise.tense}).
+                    <p class="mt-1.5 text-sm text-red-50">${currentExercise.explanation}</p> 
+                    <p class="mt-1 text-xs text-red-100 italic">${s.feedbackFormationExpectedLabel}: ${currentExercise.auxiliary_info}</p> 
+                    ${specificHint}
+                `;
+                answerInputEl.classList.add('border-red-500', 'focus:ring-red-500', 'shake-incorrect');
+            }
+            checkButtonEl.disabled = true; 
+            nextButtonEl.disabled = false; 
+            answerInputEl.disabled = true; 
+            nextButtonEl.focus(); 
+        }
+
+        function triggerConfetti(particleCount = 80, duration = 2500) {
+            const container = document.body;
+            const colors = ['blue', 'green', 'yellow', 'purple', 'orange', 'pink', 'red'];
+            for (let i = 0; i < particleCount; i++) {
+                const confettiPiece = document.createElement('div');
+                confettiPiece.classList.add('confetti-piece');
+                confettiPiece.classList.add(colors[Math.floor(Math.random() * colors.length)]);
+                confettiPiece.style.left = Math.random() * 100 + 'vw';
+                confettiPiece.style.opacity = 1;
+                const initialRotate = Math.random() * 360;
+                const translateXEnd = (Math.random() - 0.5) * 250;
+                confettiPiece.style.transform = `translateY(-20px) translateX(0px) rotate(${initialRotate}deg)`;
+                container.appendChild(confettiPiece);
+                const animation = confettiPiece.animate([
+                    { transform: `translateY(-20px) translateX(0px) rotate(${initialRotate}deg)`, opacity: 1 },
+                    { transform: `translateY(${window.innerHeight + 20}px) translateX(${translateXEnd}px) rotate(${initialRotate + Math.random() * 720}deg)`, opacity: 0 }
+                ], {
+                    duration: Math.random() * (duration - 1000) + 1000,
+                    easing: 'cubic-bezier(0.25, 0.1, 0.25, 1)',
+                    delay: Math.random() * (duration / 4)
+                });
+                animation.onfinish = () => confettiPiece.remove();
+            }
+        }
+
+        function goToNextExercise() {
+            currentExerciseIndex++;
+            loadExercise(currentExerciseIndex);
+        }
+
+        languageToggleEl.addEventListener('click', () => {
+            currentLanguage = currentLanguage === 'fr' ? 'en' : 'fr'; 
+            updateUIText(); 
+        });
+
+        checkButtonEl.addEventListener('click', checkAnswer);
+        nextButtonEl.addEventListener('click', goToNextExercise); 
+
+        answerInputEl.addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault(); 
+                if (!checkButtonEl.disabled) { 
+                    checkAnswer();
+                } else if (!nextButtonEl.disabled) { 
+                    nextButtonEl.click(); 
+                }
+            }
+        });
+
+        function initializeApp() {
+            exercisesShuffled = [...exercises]; 
+            shuffleArray(exercisesShuffled); 
+            currentExerciseIndex = 0; 
+            updateUIText(); 
+            loadExercise(currentExerciseIndex); 
+        }
+
+        initializeApp();
+    </script>
+
+</body>
+</html>
