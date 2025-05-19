@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Movie Finder (TMDb)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #111827; /* Dark background */
+            color: #f3f4f6; /* Light text */
+        }
+        .movie-card {
+            background-color: #1f2937; /* Darker card background */
+            border: 1px solid #374151; /* Card border */
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+        .movie-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .btn-primary, .btn-pagination {
+            background-color: #3b82f6; /* Blue */
+            color: white;
+            transition: background-color 0.2s ease;
+        }
+        .btn-primary:hover, .btn-pagination:hover:not(:disabled) {
+            background-color: #2563eb;
+        }
+        .btn-primary:disabled, .btn-pagination:disabled {
+            background-color: #4b5563; /* Darker gray for disabled pagination buttons */
+            color: #9ca3af;
+            cursor: not-allowed;
+        }
+        .btn-secondary {
+            background-color: #6b7280; /* Gray */
+            color: white;
+            transition: background-color 0.2s ease;
+        }
+        .btn-secondary:hover {
+            background-color: #4b5563;
+        }
+        input[type="number"], select {
+            background-color: #374151;
+            border-color: #4b5563;
+            color: #f3f4f6;
+        }
+        input[type="number"]:focus, select:focus {
+            outline: none; /* Remove default outline */
+            box-shadow: 0 0 0 2px #3b82f6; /* Custom focus ring */
+            border-color: #3b82f6;
+        }
+        /* Custom scrollbar for webkit browsers */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1f2937;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #4b5563;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #6b7280;
+        }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3b82f6;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        #pagination-controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+        }
+        .page-info {
+            margin: 0 1rem;
+            color: #d1d5db; /* Lighter gray for page info */
+        }
+        .streaming-provider-logo {
+            width: 24px; /* Adjust size as needed */
+            height: 24px; /* Adjust size as needed */
+            margin-right: 6px;
+            border-radius: 4px;
+            vertical-align: middle;
+        }
+        .streaming-info a {
+            color: #60a5fa; /* Light blue for links */
+            text-decoration: underline;
+        }
+        .streaming-info a:hover {
+            color: #93c5fd;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center pt-8 pb-12 px-4">
+
+    <header class="mb-10 text-center">
+        <h1 class="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">Movie Finder</h1>
+        <p class="text-gray-400 mt-2">Find, sort, and page through movies using TMDb!</p>
+    </header>
+
+    <main class="w-full max-w-6xl">
+        <section id="filter-controls" class="bg-gray-800 p-6 rounded-lg shadow-xl mb-8">
+            <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6">
+                <div>
+                    <label for="max-runtime" class="block text-sm font-medium text-gray-300 mb-1">Max Runtime (min)</label>
+                    <input type="number" id="max-runtime" name="max-runtime" placeholder="e.g., 120" class="w-full p-3 rounded-md shadow-sm text-sm">
+                </div>
+                <div>
+                    <label for="genre" class="block text-sm font-medium text-gray-300 mb-1">Genre</label>
+                    <select id="genre" name="genre" class="w-full p-3 rounded-md shadow-sm text-sm">
+                        <option value="">Any Genre</option>
+                        </select>
+                </div>
+                <div>
+                    <label for="min-rating" class="block text-sm font-medium text-gray-300 mb-1">Min Rating (0-10)</label>
+                    <input type="number" id="min-rating" name="min-rating" step="0.1" min="0" max="10" placeholder="e.g., 7.0" class="w-full p-3 rounded-md shadow-sm text-sm">
+                </div>
+                <div>
+                    <label for="sort-by" class="block text-sm font-medium text-gray-300 mb-1">Sort By</label>
+                    <select id="sort-by" name="sort-by" class="w-full p-3 rounded-md shadow-sm text-sm">
+                        <option value="popularity.desc">Popularity</option>
+                        <option value="original_title.asc">Title (A-Z)</option>
+                        <option value="original_title.desc">Title (Z-A)</option>
+                        <option value="vote_average.desc">Rating (High-Low)</option>
+                        <option value="vote_average.asc">Rating (Low-High)</option>
+                        <option value="runtime.desc">Runtime (Long-Short)</option>
+                        <option value="runtime.asc">Runtime (Short-Long)</option>
+                        <option value="release_date.desc">Release Date (Newest)</option>
+                        <option value="release_date.asc">Release Date (Oldest)</option>
+                    </select>
+                </div>
+                <div class="flex items-end space-x-3">
+                    <button id="find-movies-btn" class="btn-primary w-full py-3 px-4 rounded-md font-semibold shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 text-sm">
+                        Find Movies
+                    </button>
+                    <button id="clear-filters-btn" class="btn-secondary w-full py-3 px-4 rounded-md font-semibold shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50 text-sm mt-2 md:mt-0">
+                        Clear
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <section id="movie-results-section">
+            <h2 class="text-2xl font-semibold mb-6 text-gray-200">Matching Movies</h2>
+            <div id="loading-indicator" class="loader hidden"></div>
+            <div id="movie-results-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+                </div>
+            <div id="pagination-controls" class="hidden"> <button id="prev-page-btn" class="btn-pagination py-2 px-4 rounded-md font-semibold shadow-md text-sm">Previous</button>
+                <span id="page-info-display" class="page-info">Page 1 of 1</span>
+                <button id="next-page-btn" class="btn-pagination py-2 px-4 rounded-md font-semibold shadow-md text-sm">Next</button>
+            </div>
+            <p id="no-results-message" class="text-center text-gray-400 text-lg mt-10 hidden">No movies found matching your criteria. Try adjusting your filters!</p>
+            <p id="error-message" class="text-center text-red-400 text-lg mt-10 hidden"></p>
+        </section>
+    </main>
+
+    <script>
+        // --- TMDb API Configuration ---
+        const TMDB_API_KEY = "27c3e73a11410e90f680e8f28bf9a77d"; // User's API Key
+        const TMDB_BASE_URL = "https://api.themoviedb.org/3";
+        const TMDB_IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w500"; // For posters and provider logos
+        const WATCH_REGION = 'US'; // Default region for watch providers. Change as needed (e.g., 'CA', 'GB')
+
+        // --- DOM Elements ---
+        const maxRuntimeInput = document.getElementById('max-runtime');
+        const genreSelect = document.getElementById('genre');
+        const minRatingInput = document.getElementById('min-rating');
+        const sortBySelect = document.getElementById('sort-by');
+        const findMoviesBtn = document.getElementById('find-movies-btn');
+        const clearFiltersBtn = document.getElementById('clear-filters-btn');
+        const movieResultsGrid = document.getElementById('movie-results-grid');
+        const noResultsMessage = document.getElementById('no-results-message');
+        const errorMessage = document.getElementById('error-message');
+        const loadingIndicator = document.getElementById('loading-indicator');
+        const paginationControls = document.getElementById('pagination-controls');
+        const prevPageBtn = document.getElementById('prev-page-btn');
+        const nextPageBtn = document.getElementById('next-page-btn');
+        const pageInfoDisplay = document.getElementById('page-info-display');
+
+        let tmdbGenres = [];
+        let currentFetchedMovies = [];
+        let currentPage = 1;
+        let totalPages = 1;
+        let isInitialSearch = true;
+
+        // --- Show/Hide Loading Indicator ---
+        function showLoading(isLoading) {
+            loadingIndicator.classList.toggle('hidden', !isLoading);
+            findMoviesBtn.disabled = isLoading;
+            prevPageBtn.disabled = isLoading;
+            nextPageBtn.disabled = isLoading;
+            findMoviesBtn.textContent = isLoading ? 'Searching...' : 'Find Movies';
+        }
+
+        // --- Show Error Message ---
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.classList.remove('hidden');
+            movieResultsGrid.innerHTML = '';
+            noResultsMessage.classList.add('hidden');
+            paginationControls.classList.add('hidden');
+        }
+
+        // --- Clear Error Message ---
+        function clearError() {
+            errorMessage.classList.add('hidden');
+            errorMessage.textContent = '';
+        }
+        
+        // --- Fetch Genres from TMDb ---
+        async function fetchGenres() {
+            if (!TMDB_API_KEY || TMDB_API_KEY === "YOUR_TMDB_API_KEY" ) {
+                showError("API Key is missing or invalid. Please check the script.");
+                 maxRuntimeInput.disabled = true;
+                 genreSelect.disabled = true;
+                 minRatingInput.disabled = true;
+                 sortBySelect.disabled = true;
+                 findMoviesBtn.disabled = true;
+                 clearFiltersBtn.disabled = true;
+                return false;
+            }
+            maxRuntimeInput.disabled = false;
+            genreSelect.disabled = false;
+            minRatingInput.disabled = false;
+            sortBySelect.disabled = false;
+            findMoviesBtn.disabled = false;
+            clearFiltersBtn.disabled = false;
+
+            const originalButtonText = findMoviesBtn.textContent;
+            const isButtonDisabled = findMoviesBtn.disabled;
+            if (!isButtonDisabled) {
+                findMoviesBtn.disabled = true;
+                findMoviesBtn.textContent = 'Loading Genres...';
+            }
+            clearError();
+            try {
+                const response = await fetch(`${TMDB_BASE_URL}/genre/movie/list?api_key=${TMDB_API_KEY}&language=en-US`);
+                if (!response.ok) throw new Error(`API Error: ${response.status} ${response.statusText}`);
+                const data = await response.json();
+                tmdbGenres = data.genres || [];
+                populateGenreFilter(tmdbGenres);
+                return true;
+            } catch (error) {
+                console.error("Failed to fetch genres:", error);
+                showError(`Failed to load genres: ${error.message}.`);
+                return false;
+            } finally {
+                 if (!isButtonDisabled) {
+                    findMoviesBtn.disabled = false;
+                    findMoviesBtn.textContent = originalButtonText;
+                }
+            }
+        }
+
+        // --- Populate Genre Filter ---
+        function populateGenreFilter(genres) {
+            genreSelect.innerHTML = '<option value="">Any Genre</option>';
+            genres.forEach(genre => {
+                const option = document.createElement('option');
+                option.value = genre.id;
+                option.textContent = genre.name;
+                genreSelect.appendChild(option);
+            });
+        }
+
+        // --- Fetch individual movie details AND watch providers ---
+        async function fetchMovieDetailsAndEnrich(movie) {
+            let enrichedMovie = { ...movie, runtime: null, watchProviders: null };
+            try {
+                // Fetch movie details (for runtime)
+                const detailsResponse = await fetch(`${TMDB_BASE_URL}/movie/${movie.id}?api_key=${TMDB_API_KEY}&language=en-US`);
+                if (detailsResponse.ok) {
+                    const movieDetails = await detailsResponse.json();
+                    enrichedMovie.runtime = movieDetails.runtime || null;
+                } else {
+                    console.warn(`Could not fetch details for movie ID ${movie.id}: ${detailsResponse.statusText}`);
+                }
+
+                // Fetch watch providers
+                const providersResponse = await fetch(`${TMDB_BASE_URL}/movie/${movie.id}/watch/providers?api_key=${TMDB_API_KEY}`);
+                if (providersResponse.ok) {
+                    const providersData = await providersResponse.json();
+                    if (providersData.results && providersData.results[WATCH_REGION]) {
+                        enrichedMovie.watchProviders = providersData.results[WATCH_REGION];
+                    }
+                } else {
+                    console.warn(`Could not fetch watch providers for movie ID ${movie.id}: ${providersResponse.statusText}`);
+                }
+                return enrichedMovie;
+            } catch (error) {
+                console.warn(`Error fetching details/providers for movie ID ${movie.id}:`, error);
+                return enrichedMovie; // Return partially enriched movie on error
+            }
+        }
+        
+        // --- Render Movie Card ---
+        function renderMovieCard(movieWithDetails) {
+            const card = document.createElement('div');
+            card.className = 'movie-card rounded-lg shadow-lg overflow-hidden flex flex-col';
+            
+            const posterPath = movieWithDetails.poster_path ? `${TMDB_IMAGE_BASE_URL}${movieWithDetails.poster_path}` : "https://placehold.co/300x450/4B5563/FFFFFF?text=No+Poster";
+            const releaseYear = movieWithDetails.release_date ? movieWithDetails.release_date.substring(0, 4) : "N/A";
+            const rating = movieWithDetails.vote_average ? movieWithDetails.vote_average.toFixed(1) : "N/A";
+            const runtimeDisplay = movieWithDetails.runtime ? `${movieWithDetails.runtime} min` : "N/A";
+
+            // Prepare streaming provider information
+            let streamingHtml = `<p class="text-xs text-gray-500 mt-2">Streaming info not available for ${WATCH_REGION}.</p>`;
+            if (movieWithDetails.watchProviders) {
+                const providers = movieWithDetails.watchProviders;
+                const streamLink = providers.link || `https://www.themoviedb.org/movie/${movieWithDetails.id}/watch`;
+
+                if (providers.flatrate && providers.flatrate.length > 0) {
+                    streamingHtml = `<div class="mt-2 text-xs streaming-info">`;
+                    streamingHtml += `<p class="text-gray-400 mb-1">Stream on (${WATCH_REGION}):</p>`;
+                    providers.flatrate.slice(0, 3).forEach(p => { // Show up to 3 providers
+                        streamingHtml += `<span class="inline-flex items-center mr-2 mb-1">`;
+                        if (p.logo_path) {
+                             streamingHtml += `<img src="${TMDB_IMAGE_BASE_URL}${p.logo_path}" alt="${p.provider_name}" class="streaming-provider-logo">`;
+                        }
+                        streamingHtml += `<span class="text-gray-300">${p.provider_name}</span></span>`;
+                    });
+                    if (providers.flatrate.length > 3) {
+                        streamingHtml += `<span class="text-gray-400">& more</span>`;
+                    }
+                    streamingHtml += `<p class="mt-1"><a href="${streamLink}" target="_blank" rel="noopener noreferrer">See all options on TMDb</a></p>`;
+                    streamingHtml += `</div>`;
+                } else {
+                     streamingHtml = `<p class="text-xs text-gray-500 mt-2">Not currently on major streaming services in ${WATCH_REGION}. <a href="${streamLink}" target="_blank" rel="noopener noreferrer">Check TMDb for options.</a></p>`;
+                }
+            }
+
+
+            card.innerHTML = `
+                <img src="${posterPath}" alt="${movieWithDetails.title} Poster" class="w-full h-72 object-cover" onerror="this.onerror=null;this.src='https://placehold.co/300x450/4B5563/FFFFFF?text=Image+Error';">
+                <div class="p-5 flex flex-col flex-grow">
+                    <h3 class="text-xl font-semibold mb-2 text-white">${movieWithDetails.title || 'Title N/A'} (${releaseYear})</h3>
+                    <p class="text-sm text-gray-400 mb-1"><span class="font-medium text-gray-300">Rating:</span> ${rating}/10 (${movieWithDetails.vote_count || 0} votes)</p>
+                    <p class="text-sm text-gray-400 mb-1"><span class="font-medium text-gray-300">Runtime:</span> ${runtimeDisplay}</p>
+                    <p class="text-xs text-gray-500 flex-grow leading-relaxed mb-2">${movieWithDetails.overview || "No overview available."}</p>
+                    ${streamingHtml} </div>
+            `;
+            return card;
+        }
+
+        // --- Display Rendered Movie Cards ---
+        function displayRenderedMovies(moviesToDisplay) {
+            movieResultsGrid.innerHTML = ''; 
+            if (!moviesToDisplay || moviesToDisplay.length === 0) {
+                if (!isInitialSearch) {
+                  noResultsMessage.classList.remove('hidden');
+                }
+                paginationControls.classList.add('hidden');
+            } else {
+                noResultsMessage.classList.add('hidden');
+                moviesToDisplay.forEach(movie => {
+                    const movieCard = renderMovieCard(movie);
+                    movieResultsGrid.appendChild(movieCard);
+                });
+                updatePaginationControls();
+                paginationControls.classList.remove('hidden');
+            }
+            isInitialSearch = false;
+        }
+        
+        // --- Update Pagination Controls ---
+        function updatePaginationControls() {
+            pageInfoDisplay.textContent = `Page ${currentPage} of ${totalPages}`;
+            prevPageBtn.disabled = currentPage === 1;
+            nextPageBtn.disabled = currentPage >= totalPages;
+            
+            if(totalPages <= 1) {
+                paginationControls.classList.add('hidden');
+            } else {
+                paginationControls.classList.remove('hidden');
+            }
+        }
+
+        // --- Client-Side Sorting for Runtime ---
+        function sortMoviesClientSide(movies, sortByValue) {
+            const [sortField, sortDirection] = sortByValue.split('.');
+            if (sortField === 'runtime') {
+                return [...movies].sort((a, b) => {
+                    const runtimeA = a.runtime === null || typeof a.runtime === 'undefined' ? (sortDirection === 'asc' ? Infinity : -Infinity) : a.runtime;
+                    const runtimeB = b.runtime === null || typeof b.runtime === 'undefined' ? (sortDirection === 'asc' ? Infinity : -Infinity) : b.runtime;
+                    
+                    if (runtimeA < runtimeB) return sortDirection === 'asc' ? -1 : 1;
+                    if (runtimeA > runtimeB) return sortDirection === 'asc' ? 1 : -1;
+                    return 0;
+                });
+            }
+            return movies;
+        }
+
+        // --- Main Function to Find and Display Movies ---
+        async function findAndDisplayMovies(page = 1) {
+            if (!TMDB_API_KEY || TMDB_API_KEY === "YOUR_TMDB_API_KEY") {
+                showError("API Key is missing or invalid. Please configure it in the script.");
+                return;
+            }
+
+            showLoading(true);
+            clearError();
+            currentPage = page;
+
+            const maxRuntimeVal = maxRuntimeInput.value;
+            const selectedGenreId = genreSelect.value; 
+            const minRatingVal = minRatingInput.value;
+            const sortByValue = sortBySelect.value;
+
+            let apiUrl = `${TMDB_BASE_URL}/discover/movie?api_key=${TMDB_API_KEY}&language=en-US&include_adult=false&include_video=false&page=${currentPage}`;
+
+            if (maxRuntimeVal) apiUrl += `&with_runtime.lte=${maxRuntimeVal}`;
+            if (selectedGenreId) apiUrl += `&with_genres=${selectedGenreId}`;
+            if (minRatingVal) apiUrl += `&vote_average.gte=${minRatingVal}`;
+            apiUrl += `&vote_count.gte=100`; 
+
+            if (!sortByValue.startsWith('runtime.')) {
+                apiUrl += `&sort_by=${sortByValue}`;
+            } else {
+                apiUrl += `&sort_by=popularity.desc`;
+            }
+
+            try {
+                const response = await fetch(apiUrl);
+                if (!response.ok) {
+                     const errorData = await response.json();
+                     throw new Error(`API Error: ${response.status} ${response.statusText} - ${errorData.status_message || 'Unknown TMDb error'}`);
+                }
+                const data = await response.json();
+                totalPages = data.total_pages || 1;
+                let baseMovies = data.results || [];
+
+                if (baseMovies.length === 0) {
+                    currentFetchedMovies = [];
+                    displayRenderedMovies([]); 
+                    updatePaginationControls();
+                    return; 
+                }
+
+                // This now fetches details AND watch providers
+                const detailPromises = baseMovies.map(movie => fetchMovieDetailsAndEnrich(movie));
+                currentFetchedMovies = await Promise.all(detailPromises);
+
+                if (sortByValue.startsWith('runtime.')) {
+                    currentFetchedMovies = sortMoviesClientSide(currentFetchedMovies, sortByValue);
+                }
+                
+                displayRenderedMovies(currentFetchedMovies);
+                document.getElementById('movie-results-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+            } catch (error) {
+                console.error("Failed to fetch or process movies:", error);
+                showError(`Operation failed: ${error.message}. Check console for details.`);
+                currentFetchedMovies = [];
+                displayRenderedMovies([]); 
+            } finally {
+                showLoading(false);
+            }
+        }
+        
+        // --- Clear Filters ---
+        function clearFilters() {
+            maxRuntimeInput.value = '';
+            genreSelect.value = ''; 
+            minRatingInput.value = '';
+            sortBySelect.value = 'popularity.desc';
+            clearError();
+            movieResultsGrid.innerHTML = ''; 
+            noResultsMessage.classList.add('hidden'); 
+            currentFetchedMovies = []; 
+            currentPage = 1;
+            totalPages = 1;
+            isInitialSearch = true;
+            paginationControls.classList.add('hidden');
+        }
+
+        // --- Event Listeners ---
+        findMoviesBtn.addEventListener('click', () => {
+            isInitialSearch = false; 
+            findAndDisplayMovies(1);
+        });
+        clearFiltersBtn.addEventListener('click', clearFilters);
+        prevPageBtn.addEventListener('click', () => {
+            if (currentPage > 1) {
+                findAndDisplayMovies(currentPage - 1);
+            }
+        });
+        nextPageBtn.addEventListener('click', () => {
+            if (currentPage < totalPages) {
+                findAndDisplayMovies(currentPage + 1);
+            }
+        });
+
+        // --- Initial Setup ---
+        document.addEventListener('DOMContentLoaded', async () => {
+            paginationControls.classList.add('hidden');
+            const genresLoaded = await fetchGenres(); 
+            if (genresLoaded) {
+                // No initial movie load
+            }
+        });
+
+    </script>
+</body>
+</html>
