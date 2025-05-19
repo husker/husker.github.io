@@ -174,7 +174,8 @@
         const TMDB_API_KEY = "27c3e73a11410e90f680e8f28bf9a77d"; // User's API Key
         const TMDB_BASE_URL = "https://api.themoviedb.org/3";
         const TMDB_IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w500"; // For posters and provider logos
-        const WATCH_REGION = 'US'; // Default region for watch providers. Change as needed (e.g., 'CA', 'GB')
+        const WATCH_REGION = 'US'; // Default region for watch providers.
+        const MIN_VOTE_COUNT_FOR_MAINSTREAM = 500; // Increased for more mainstream results
 
         // --- DOM Elements ---
         const maxRuntimeInput = document.getElementById('max-runtime');
@@ -416,7 +417,7 @@
             clearError();
             currentPage = page;
 
-            const maxRuntimeVal = maxRuntimeInput.value; // This is a string
+            const maxRuntimeVal = maxRuntimeInput.value; 
             const selectedGenreId = genreSelect.value; 
             const minRatingVal = minRatingInput.value;
             const sortByValue = sortBySelect.value;
@@ -426,7 +427,9 @@
             if (maxRuntimeVal) apiUrl += `&with_runtime.lte=${maxRuntimeVal}`;
             if (selectedGenreId) apiUrl += `&with_genres=${selectedGenreId}`;
             if (minRatingVal) apiUrl += `&vote_average.gte=${minRatingVal}`;
-            apiUrl += `&vote_count.gte=100`; 
+            
+            // Changed: Using the MIN_VOTE_COUNT_FOR_MAINSTREAM constant
+            apiUrl += `&vote_count.gte=${MIN_VOTE_COUNT_FOR_MAINSTREAM}`; 
 
             if (!sortByValue.startsWith('runtime.')) {
                 apiUrl += `&sort_by=${sortByValue}`;
@@ -453,31 +456,25 @@
 
                 let enrichedMovies = await Promise.all(baseMovies.map(movie => fetchMovieDetailsAndEnrich(movie)));
 
-                // --- Client-side filter for Max Runtime ---
-                // This ensures strict adherence to the user's max runtime input,
-                // using the precise runtime fetched from the movie details endpoint.
                 if (maxRuntimeVal) {
                     const numericMaxRuntime = parseInt(maxRuntimeVal, 10);
                     if (!isNaN(numericMaxRuntime)) {
                         enrichedMovies = enrichedMovies.filter(movie => {
-                            return movie.runtime !== null && movie.runtime <= numericMaxRuntime;
+                            return movie.runtime !== null && typeof movie.runtime === 'number' && movie.runtime <= numericMaxRuntime;
                         });
                     }
                 }
-                // --- End of client-side runtime filter ---
 
-                currentFetchedMovies = enrichedMovies; // Assign the (potentially) client-side filtered movies
+                currentFetchedMovies = enrichedMovies; 
 
                 if (sortByValue.startsWith('runtime.')) {
                     currentFetchedMovies = sortMoviesClientSide(currentFetchedMovies, sortByValue);
                 }
                 
                 displayRenderedMovies(currentFetchedMovies);
-                // Only scroll if there are results to avoid scrolling on "no results"
                 if(currentFetchedMovies.length > 0){
                     document.getElementById('movie-results-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
                 }
-
 
             } catch (error) {
                 console.error("Failed to fetch or process movies:", error);
