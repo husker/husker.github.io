@@ -6,6 +6,14 @@
     <title>Movie Time (TMDb)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-MB5QQJH8N9"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-MB5QQJH8N9');
+    </script>
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -428,7 +436,6 @@
             if (selectedGenreId) apiUrl += `&with_genres=${selectedGenreId}`;
             if (minRatingVal) apiUrl += `&vote_average.gte=${minRatingVal}`;
             
-            // Changed: Using the MIN_VOTE_COUNT_FOR_MAINSTREAM constant
             apiUrl += `&vote_count.gte=${MIN_VOTE_COUNT_FOR_MAINSTREAM}`; 
 
             if (!sortByValue.startsWith('runtime.')) {
