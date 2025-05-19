@@ -204,7 +204,6 @@
             findMoviesBtn.disabled = isLoading;
             prevPageBtn.disabled = isLoading;
             nextPageBtn.disabled = isLoading;
-            // Changed: Update button text during loading states
             findMoviesBtn.textContent = isLoading ? 'Searching...' : 'Search';
         }
 
@@ -242,11 +241,11 @@
             findMoviesBtn.disabled = false;
             clearFiltersBtn.disabled = false;
 
-            const originalButtonText = findMoviesBtn.textContent; // Will now be "Search" if HTML is updated
+            const originalButtonText = findMoviesBtn.textContent; 
             const isButtonDisabled = findMoviesBtn.disabled;
             if (!isButtonDisabled) {
                 findMoviesBtn.disabled = true;
-                findMoviesBtn.textContent = 'Loading Genres...'; // This is a temporary specific state
+                findMoviesBtn.textContent = 'Loading Genres...'; 
             }
             clearError();
             try {
@@ -263,7 +262,6 @@
             } finally {
                  if (!isButtonDisabled) {
                     findMoviesBtn.disabled = false;
-                    // Restore to original text, which should be "Search" after HTML change
                     findMoviesBtn.textContent = originalButtonText; 
                 }
             }
@@ -306,7 +304,7 @@
                 return enrichedMovie;
             } catch (error) {
                 console.warn(`Error fetching details/providers for movie ID ${movie.id}:`, error);
-                return enrichedMovie; // Return partially enriched movie on error
+                return enrichedMovie; 
             }
         }
         
@@ -320,7 +318,6 @@
             const rating = movieWithDetails.vote_average ? movieWithDetails.vote_average.toFixed(1) : "N/A";
             const runtimeDisplay = movieWithDetails.runtime ? `${movieWithDetails.runtime} min` : "N/A";
 
-            // Prepare streaming provider information
             let streamingHtml = `<p class="text-xs text-gray-500 mt-2">Streaming info not available for ${WATCH_REGION}.</p>`;
             if (movieWithDetails.watchProviders) {
                 const providers = movieWithDetails.watchProviders;
@@ -329,7 +326,7 @@
                 if (providers.flatrate && providers.flatrate.length > 0) {
                     streamingHtml = `<div class="mt-2 text-xs streaming-info">`;
                     streamingHtml += `<p class="text-gray-400 mb-1">Stream on (${WATCH_REGION}):</p>`;
-                    providers.flatrate.slice(0, 3).forEach(p => { // Show up to 3 providers
+                    providers.flatrate.slice(0, 3).forEach(p => { 
                         streamingHtml += `<span class="inline-flex items-center mr-2 mb-1">`;
                         if (p.logo_path) {
                              streamingHtml += `<img src="${TMDB_IMAGE_BASE_URL}${p.logo_path}" alt="${p.provider_name}" class="streaming-provider-logo">`;
@@ -346,7 +343,6 @@
                 }
             }
 
-
             card.innerHTML = `
                 <img src="${posterPath}" alt="${movieWithDetails.title} Poster" class="w-full h-72 object-cover" onerror="this.onerror=null;this.src='https://placehold.co/300x450/4B5563/FFFFFF?text=Image+Error';">
                 <div class="p-5 flex flex-col flex-grow">
@@ -354,7 +350,8 @@
                     <p class="text-sm text-gray-400 mb-1"><span class="font-medium text-gray-300">Rating:</span> ${rating}/10 (${movieWithDetails.vote_count || 0} votes)</p>
                     <p class="text-sm text-gray-400 mb-1"><span class="font-medium text-gray-300">Runtime:</span> ${runtimeDisplay}</p>
                     <p class="text-xs text-gray-500 flex-grow leading-relaxed mb-2">${movieWithDetails.overview || "No overview available."}</p>
-                    ${streamingHtml} </div>
+                    ${streamingHtml} 
+                </div>
             `;
             return card;
         }
@@ -419,7 +416,7 @@
             clearError();
             currentPage = page;
 
-            const maxRuntimeVal = maxRuntimeInput.value;
+            const maxRuntimeVal = maxRuntimeInput.value; // This is a string
             const selectedGenreId = genreSelect.value; 
             const minRatingVal = minRatingInput.value;
             const sortByValue = sortBySelect.value;
@@ -454,16 +451,33 @@
                     return; 
                 }
 
-                // This now fetches details AND watch providers
-                const detailPromises = baseMovies.map(movie => fetchMovieDetailsAndEnrich(movie));
-                currentFetchedMovies = await Promise.all(detailPromises);
+                let enrichedMovies = await Promise.all(baseMovies.map(movie => fetchMovieDetailsAndEnrich(movie)));
+
+                // --- Client-side filter for Max Runtime ---
+                // This ensures strict adherence to the user's max runtime input,
+                // using the precise runtime fetched from the movie details endpoint.
+                if (maxRuntimeVal) {
+                    const numericMaxRuntime = parseInt(maxRuntimeVal, 10);
+                    if (!isNaN(numericMaxRuntime)) {
+                        enrichedMovies = enrichedMovies.filter(movie => {
+                            return movie.runtime !== null && movie.runtime <= numericMaxRuntime;
+                        });
+                    }
+                }
+                // --- End of client-side runtime filter ---
+
+                currentFetchedMovies = enrichedMovies; // Assign the (potentially) client-side filtered movies
 
                 if (sortByValue.startsWith('runtime.')) {
                     currentFetchedMovies = sortMoviesClientSide(currentFetchedMovies, sortByValue);
                 }
                 
                 displayRenderedMovies(currentFetchedMovies);
-                document.getElementById('movie-results-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
+                // Only scroll if there are results to avoid scrolling on "no results"
+                if(currentFetchedMovies.length > 0){
+                    document.getElementById('movie-results-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+
 
             } catch (error) {
                 console.error("Failed to fetch or process movies:", error);
