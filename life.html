@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conway's Game of Life - Selectable Rules</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background-color: #1a202c; /* Tailwind gray-900 */
+            color: #e2e8f0; /* Tailwind gray-300 */
+            margin: 0;
+            padding: 1rem;
+        }
+        canvas {
+            border: 1px solid #4a5568; /* Tailwind gray-600 */
+            border-radius: 0.375rem; /* rounded-md */
+            background-color: #2d3748; /* Tailwind gray-800 */
+        }
+        .controls button, .controls select, .controls input {
+            transition: all 0.2s ease-in-out;
+        }
+        .controls button:hover:not(:disabled) {
+            transform: translateY(-2px);
+        }
+        .controls button:active:not(:disabled) {
+            transform: translateY(0px);
+        }
+        .info-box {
+            background-color: #2d3748; /* Tailwind gray-800 */
+            padding: 1rem;
+            border-radius: 0.375rem; /* rounded-md */
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            min-height: 120px; /* Ensure space for rule description */
+        }
+        /* Custom modal styles */
+        .modal {
+            display: none; /* Hidden by default */
+            position: fixed; /* Stay in place */
+            z-index: 100; /* Sit on top */
+            left: 0;
+            top: 0;
+            width: 100%; /* Full width */
+            height: 100%; /* Full height */
+            overflow: auto; /* Enable scroll if needed */
+            background-color: rgba(0,0,0,0.6); /* Black w/ opacity */
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-content {
+            background-color: #2d3748; /* Tailwind gray-800 */
+            margin: auto;
+            padding: 20px;
+            border: 1px solid #4a5568; /* Tailwind gray-600 */
+            border-radius: 0.5rem; /* rounded-lg */
+            width: 80%;
+            max-width: 500px;
+            text-align: center;
+            color: #e2e8f0; /* Tailwind gray-300 */
+        }
+        .modal-close-button {
+            background-color: #4299e1; /* Tailwind blue-500 */
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem; /* rounded-md */
+            margin-top: 1rem;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-300 flex flex-col items-center justify-center min-h-screen p-4">
+
+    <h1 class="text-4xl font-bold mb-6 text-center text-blue-400">Conway's Game of Life 🕹️</h1>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-5xl">
+        <div class="md:col-span-1 bg-gray-800 p-6 rounded-lg shadow-xl">
+            <h2 class="text-2xl font-semibold mb-4 text-blue-300">Controls ⚙️</h2>
+            <div class="space-y-3 controls">
+                <button id="startButton" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-md shadow-md">▶️ Start</button>
+                <button id="stopButton" class="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-4 rounded-md shadow-md">⏹️ Stop</button>
+                <button id="randomizeButton" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-4 rounded-md shadow-md">🎲 Randomize & Reset</button>
+                <button id="nextStepButton" class="w-full bg-purple-500 hover:bg-purple-600 text-white font-bold py-3 px-4 rounded-md shadow-md">⏭️ Next Step</button>
+            </div>
+
+            <h2 class="text-2xl font-semibold mt-8 mb-4 text-blue-300">Settings 🔧</h2>
+            <div class="space-y-4 controls">
+                <div>
+                    <label for="ruleSet" class="block text-sm font-medium text-gray-400">Rule Set:</label>
+                    <select id="ruleSet" class="mt-1 block w-full bg-gray-700 border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-200">
+                        </select>
+                </div>
+                <div>
+                    <label for="cellSize" class="block text-sm font-medium text-gray-400">Cell Size (px):</label>
+                    <input type="number" id="cellSize" value="10" min="2" max="30" class="mt-1 block w-full bg-gray-700 border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-200">
+                </div>
+                <div>
+                    <label for="gridWidth" class="block text-sm font-medium text-gray-400">Grid Width (cells):</label>
+                    <input type="number" id="gridWidth" value="60" min="10" max="200" class="mt-1 block w-full bg-gray-700 border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-200">
+                </div>
+                <div>
+                    <label for="gridHeight" class="block text-sm font-medium text-gray-400">Grid Height (cells):</label>
+                    <input type="number" id="gridHeight" value="40" min="10" max="200" class="mt-1 block w-full bg-gray-700 border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-200">
+                </div>
+                 <div>
+                    <label for="randomDensity" class="block text-sm font-medium text-gray-400">Random Density (0.1 - 0.9):</label>
+                    <input type="number" id="randomDensity" value="0.3" min="0.1" max="0.9" step="0.05" class="mt-1 block w-full bg-gray-700 border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-200">
+                </div>
+                <div>
+                    <label for="updateInterval" class="block text-sm font-medium text-gray-400">Update Interval (ms):</label>
+                    <input type="number" id="updateInterval" value="100" min="50" max="1000" step="50" class="mt-1 block w-full bg-gray-700 border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-200">
+                </div>
+                <button id="applySettingsButton" class="w-full bg-teal-500 hover:bg-teal-600 text-white font-bold py-3 px-4 rounded-md shadow-md">🔄 Apply All Settings & Reset</button>
+            </div>
+             <div class="mt-8 info-box text-gray-400">
+                <h3 class="text-lg font-semibold text-blue-300 mb-2">Current Rules: <span id="currentRuleNameDisplay"></span> 📜</h3>
+                <p id="currentRuleDescriptionDisplay" class="text-sm"></p>
+            </div>
+        </div>
+
+        <div class="md:col-span-2 flex flex-col items-center justify-center">
+            <canvas id="gameCanvas" class="rounded-md shadow-xl"></canvas>
+            <p class="mt-4 text-sm text-gray-500">Generation: <span id="generationCount">0</span></p>
+        </div>
+    </div>
+
+    <div id="messageModal" class="modal">
+        <div class="modal-content">
+            <p id="modalMessageText" class="text-lg"></p>
+            <button id="modalCloseButton" class="modal-close-button">OK</button>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const startButton = document.getElementById('startButton');
+        const stopButton = document.getElementById('stopButton');
+        const randomizeButton = document.getElementById('randomizeButton');
+        const nextStepButton = document.getElementById('nextStepButton');
+        const applySettingsButton = document.getElementById('applySettingsButton');
+        const generationCountSpan = document.getElementById('generationCount');
+        const ruleSetSelect = document.getElementById('ruleSet');
+        const currentRuleNameDisplay = document.getElementById('currentRuleNameDisplay');
+        const currentRuleDescriptionDisplay = document.getElementById('currentRuleDescriptionDisplay');
+
+
+        // Settings Inputs
+        let cellSizeInput = document.getElementById('cellSize');
+        let gridWidthInput = document.getElementById('gridWidth');
+        let gridHeightInput = document.getElementById('gridHeight');
+        let randomDensityInput = document.getElementById('randomDensity');
+        let updateIntervalInput = document.getElementById('updateInterval');
+
+        // Modal Elements
+        const messageModal = document.getElementById('messageModal');
+        const modalMessageText = document.getElementById('modalMessageText');
+        const modalCloseButton = document.getElementById('modalCloseButton');
+
+        // Game Rules Definition
+        // B (Birth): A list of neighbor counts that cause a dead cell to become alive.
+        // S (Survival): A list of neighbor counts that cause a live cell to remain alive.
+        const RULE_SETS = {
+            "Standard (B3/S23)": { B: [3], S: [2, 3], description: "Classic Conway: Born with 3, Survives with 2 or 3 neighbors." },
+            "Hardier Cells (B3/S12345)": { B: [3], S: [1, 2, 3, 4, 5], description: "More resilient: Born B3, Survives S12345. Leads to denser patterns." },
+            "HighLife (B36/S23)": { B: [3, 6], S: [2, 3], description: "Replicators: Born B36, Survives S23. Known for self-copying patterns." },
+            "Seeds (B2/S0-8)": { B: [2], S: [0, 1, 2, 3, 4, 5, 6, 7, 8], description: "Explosive growth: Born B2, live cells never die from neighbor count." },
+            "Maze (B3/S0-8)": { B: [3], S: [0, 1, 2, 3, 4, 5, 6, 7, 8], description: "Maze-like patterns: Born B3, live cells never die from neighbor count." },
+            "Amoeba (B357/S1358)": { B: [3, 5, 7], S: [1, 3, 5, 8], description: "Organic & dynamic: Born B357, Survives S1358. Creates amoeba-like patterns." }
+        };
+        let currentRuleKey = Object.keys(RULE_SETS)[0]; // Default to the first rule in the RULE_SETS object
+
+        // Game State
+        let grid; // 2D array representing cell states (0 for dead, 1 for alive)
+        let numCols; // Number of columns in the grid
+        let numRows; // Number of rows in the grid
+        let cellSize = parseInt(cellSizeInput.value); // Size of each cell in pixels
+        let simulationIntervalId = null; // ID for the setInterval, used to stop the simulation
+        let generation = 0; // Counter for the number of generations
+        let isRunning = false; // Flag to indicate if the simulation is currently running
+        let updateInterval = parseInt(updateIntervalInput.value); // Time in ms between simulation steps
+        let randomDensity = parseFloat(randomDensityInput.value); // Probability (0-1) for a cell to be alive during randomization
+
+        // Colors
+        const ALIVE_COLOR = '#68D391'; // Tailwind green-400 for live cells
+        const DEAD_COLOR = '#2d3748';  // Tailwind gray-800 for dead cells (canvas background)
+        const GRID_LINE_COLOR = '#4A5568'; // Tailwind gray-600 for grid lines
+
+        /**
+         * Shows a message in a modal dialog.
+         * @param {string} message - The message to display.
+         */
+        function showModal(message) {
+            modalMessageText.textContent = message;
+            messageModal.style.display = 'flex';
+        }
+
+        /**
+         * Hides the modal dialog.
+         */
+        function closeModal() {
+            messageModal.style.display = 'none';
+        }
+        modalCloseButton.onclick = closeModal; // Assign event listener to modal close button
+        // Close modal if user clicks outside of the modal content
+        window.onclick = function(event) {
+            if (event.target == messageModal) closeModal();
+        }
+
+        /**
+         * Populates the rule set dropdown menu from the RULE_SETS object.
+         */
+        function populateRuleSetDropdown() {
+            for (const key in RULE_SETS) {
+                const option = document.createElement('option');
+                option.value = key;
+                option.textContent = key;
+                ruleSetSelect.appendChild(option);
+            }
+            ruleSetSelect.value = currentRuleKey; // Set the dropdown to the default selected rule
+        }
+
+        /**
+         * Updates the displayed name and description of the current rule set.
+         */
+        function updateRuleDescription() {
+            const selectedRule = RULE_SETS[currentRuleKey];
+            currentRuleNameDisplay.textContent = currentRuleKey;
+            currentRuleDescriptionDisplay.textContent = selectedRule.description;
+        }
+        
+        /**
+         * Reads all settings from input fields, validates them,
+         * re-initializes the game state, canvas, and randomizes the grid.
+         * This is the central function for applying any changes.
+         */
+        function applyCurrentSettingsAndReset() {
+            console.log("Applying settings and resetting game...");
+            stopSimulation(); // Ensure any ongoing simulation is stopped
+
+            // Read values from all input fields
+            cellSize = parseInt(cellSizeInput.value);
+            numCols = parseInt(gridWidthInput.value);
+            numRows = parseInt(gridHeightInput.value);
+            randomDensity = parseFloat(randomDensityInput.value);
+            updateInterval = parseInt(updateIntervalInput.value);
+            currentRuleKey = ruleSetSelect.value; // Get the currently selected rule set
+
+            // Basic validation for inputs, resetting to defaults if invalid
+            let settingsChangedMessage = "";
+            if (isNaN(cellSize) || cellSize < 2 || cellSize > 30) {
+                cellSizeInput.value = 10; cellSize = 10;
+                settingsChangedMessage += "Cell Size reset to 10 (must be 2-30).\n";
+            }
+            if (isNaN(numCols) || numCols < 10 || numCols > 200) {
+                gridWidthInput.value = 60; numCols = 60;
+                settingsChangedMessage += "Grid Width reset to 60 (must be 10-200).\n";
+            }
+            if (isNaN(numRows) || numRows < 10 || numRows > 200) {
+                gridHeightInput.value = 40; numRows = 40;
+                settingsChangedMessage += "Grid Height reset to 40 (must be 10-200).\n";
+            }
+            if (isNaN(randomDensity) || randomDensity < 0.1 || randomDensity > 0.9) {
+                randomDensityInput.value = 0.3; randomDensity = 0.3;
+                settingsChangedMessage += "Random Density reset to 0.3 (must be 0.1-0.9).\n";
+            }
+            if (isNaN(updateInterval) || updateInterval < 50 || updateInterval > 1000) {
+                updateIntervalInput.value = 100; updateInterval = 100;
+                settingsChangedMessage += "Update Interval reset to 100ms (must be 50-1000).\n";
+            }
+            if(settingsChangedMessage) showModal(settingsChangedMessage.trim());
+
+
+            // Update canvas dimensions based on new settings
+            canvas.width = numCols * cellSize;
+            canvas.height = numRows * cellSize;
+
+            grid = createEmptyGrid(); // Create a new, empty grid structure
+            randomizeGrid();          // Populate the grid with a random pattern and draw it
+            updateRuleDescription();  // Update the displayed rule info
+            console.log(`Grid re-initialized: ${numCols}x${numRows}, Cell: ${cellSize}px, Rule: ${currentRuleKey}`);
+        }
+
+        /**
+         * Initializes game state variables from their respective input fields.
+         * Does not re-create the grid or canvas; that's handled by applyCurrentSettingsAndReset.
+         */
+        function initializeGameValues() {
+            currentRuleKey = ruleSetSelect.value || Object.keys(RULE_SETS)[0];
+            cellSize = parseInt(cellSizeInput.value);
+            numCols = parseInt(gridWidthInput.value);
+            numRows = parseInt(gridHeightInput.value);
+            randomDensity = parseFloat(randomDensityInput.value);
+            updateInterval = parseInt(updateIntervalInput.value);
+            updateRuleDescription(); // Display initial rule description
+        }
+
+        /**
+         * Creates a 2D array representing the game grid, initialized to all dead cells (0).
+         * @returns {Array<Array<number>>} The empty grid.
+         */
+        function createEmptyGrid() {
+            const arr = new Array(numCols);
+            for (let i = 0; i < numCols; i++) {
+                arr[i] = new Array(numRows).fill(0);
+            }
+            return arr;
+        }
+
+        /**
+         * Populates the grid with a random pattern of live cells based on `randomDensity`.
+         * Resets generation count and redraws the grid.
+         */
+        function randomizeGrid() {
+            console.log("Randomizing grid with density:", randomDensity);
+            // Ensure grid is correctly dimensioned if settings changed numCols/numRows before this call
+            if (!grid || grid.length !== numCols || (grid[0] && grid[0].length !== numRows)) {
+                grid = createEmptyGrid();
+            }
+            for (let x = 0; x < numCols; x++) {
+                for (let y = 0; y < numRows; y++) {
+                    grid[x][y] = Math.random() < randomDensity ? 1 : 0;
+                }
+            }
+            generation = 0; // Reset generation count on randomization
+            updateGenerationCount();
+            drawGrid(); // Draw the newly randomized grid
+        }
+
+        /**
+         * Draws the current state of the grid onto the canvas.
+         * Live cells are drawn with ALIVE_COLOR, dead cells with DEAD_COLOR.
+         * Grid lines are drawn if cellSize is large enough.
+         */
+        function drawGrid() {
+            // Clear canvas with the dead cell color (acts as background)
+            ctx.fillStyle = DEAD_COLOR;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw live cells
+            ctx.fillStyle = ALIVE_COLOR;
+            for (let x = 0; x < numCols; x++) {
+                for (let y = 0; y < numRows; y++) {
+                    if (grid[x][y] === 1) {
+                        // Subtracting 1 from width/height creates a visual grid line effect
+                        ctx.fillRect(x * cellSize, y * cellSize, cellSize -1 , cellSize -1);
+                    }
+                }
+            }
+
+            // Draw grid lines if cells are large enough to see them
+            if (cellSize > 4) {
+                ctx.strokeStyle = GRID_LINE_COLOR;
+                ctx.lineWidth = 0.5; // Thin lines
+                for (let x = 0; x <= numCols; x++) { // Iterate one past to draw the last line
+                    ctx.beginPath();
+                    ctx.moveTo(x * cellSize, 0);
+                    ctx.lineTo(x * cellSize, canvas.height);
+                    ctx.stroke();
+                }
+                for (let y = 0; y <= numRows; y++) { // Iterate one past for the last horizontal line
+                    ctx.beginPath();
+                    ctx.moveTo(0, y * cellSize);
+                    ctx.lineTo(canvas.width, y * cellSize);
+                    ctx.stroke();
+                }
+            }
+        }
+
+        /**
+         * Calculates the next generation of the grid based on the currently selected rule set.
+         */
+        function updateGrid() {
+            const nextGrid = createEmptyGrid(); // Create a new grid for the next state
+            const rules = RULE_SETS[currentRuleKey]; // Get the B/S rules for the current set
+
+            for (let x = 0; x < numCols; x++) {
+                for (let y = 0; y < numRows; y++) {
+                    const liveNeighbors = countLiveNeighbors(x, y);
+                    const cellState = grid[x][y];
+
+                    if (cellState === 1) { // Cell is currently alive
+                        if (rules.S.includes(liveNeighbors)) {
+                            nextGrid[x][y] = 1; // Survives
+                        } else {
+                            nextGrid[x][y] = 0; // Dies (underpopulation or overpopulation)
+                        }
+                    } else { // Cell is currently dead
+                        if (rules.B.includes(liveNeighbors)) {
+                            nextGrid[x][y] = 1; // Born (reproduction)
+                        } else {
+                            nextGrid[x][y] = 0; // Stays dead
+                        }
+                    }
+                }
+            }
+            grid = nextGrid; // Update the main grid to the new state
+            generation++;
+            updateGenerationCount();
+        }
+
+        /**
+         * Counts the number of live neighbors for a given cell (x, y).
+         * Implements toroidal array logic (edges wrap around).
+         * @param {number} x - The x-coordinate of the cell.
+         * @param {number} y - The y-coordinate of the cell.
+         * @returns {number} The count of live neighbors.
+         */
+        function countLiveNeighbors(x, y) {
+            let count = 0;
+            // Iterate through the 8 neighbors
+            for (let i = -1; i <= 1; i++) {
+                for (let j = -1; j <= 1; j++) {
+                    if (i === 0 && j === 0) continue; // Skip the cell itself
+
+                    // Calculate neighbor coordinates with wrap-around (toroidal array)
+                    const neighborX = (x + i + numCols) % numCols;
+                    const neighborY = (y + j + numRows) % numRows;
+
+                    if (grid[neighborX][neighborY] === 1) {
+                        count++;
+                    }
+                }
+            }
+            return count;
+        }
+
+        /**
+         * Performs a single step of the simulation: updates the grid and redraws it.
+         */
+        function simulationStep() {
+            updateGrid();
+            drawGrid();
+        }
+
+        /**
+         * Starts the simulation, repeatedly calling simulationStep at `updateInterval`.
+         */
+        function startSimulation() {
+            if (isRunning) return; // Prevent multiple intervals if already running
+            isRunning = true;
+            // Disable controls that shouldn't be used during simulation
+            startButton.disabled = true;
+            stopButton.disabled = false;
+            nextStepButton.disabled = true;
+            applySettingsButton.disabled = true;
+            ruleSetSelect.disabled = true; // Disable rule changes while running
+            console.log(`Starting simulation. Interval: ${updateInterval}ms, Rule: ${currentRuleKey}`);
+
+            if (simulationIntervalId) clearInterval(simulationIntervalId); // Clear old interval just in case
+            simulationIntervalId = setInterval(simulationStep, updateInterval);
+        }
+
+        /**
+         * Stops the simulation.
+         */
+        function stopSimulation() {
+            if (!isRunning && !simulationIntervalId) return; // Already stopped or never started
+            isRunning = false;
+            // Re-enable controls
+            startButton.disabled = false;
+            stopButton.disabled = true;
+            nextStepButton.disabled = false;
+            applySettingsButton.disabled = false;
+            ruleSetSelect.disabled = false; // Enable rule changes when stopped
+            console.log("Stopping simulation.");
+
+            if (simulationIntervalId) {
+                clearInterval(simulationIntervalId);
+                simulationIntervalId = null;
+            }
+        }
+
+        /**
+         * Updates the generation counter display on the page.
+         */
+        function updateGenerationCount() {
+            generationCountSpan.textContent = generation;
+        }
+
+        // Event Listeners Setup
+        startButton.addEventListener('click', () => {
+            // If grid isn't set up (e.g., first run or after settings cleared parts of it), initialize fully.
+            if (!grid || canvas.width === 0 || canvas.height === 0) {
+                 applyCurrentSettingsAndReset(); 
+            }
+            startSimulation();
+        });
+
+        stopButton.addEventListener('click', stopSimulation);
+
+        randomizeButton.addEventListener('click', () => {
+            // This button should re-apply current settings (which includes the selected rule)
+            // and then generate a new random pattern.
+            applyCurrentSettingsAndReset(); 
+            showModal("Grid randomized with current settings. ✨");
+        });
+        
+        nextStepButton.addEventListener('click', () => {
+            if (isRunning) return; // Don't step if simulation is running
+            if (!grid || canvas.width === 0 || canvas.height === 0) {
+                 applyCurrentSettingsAndReset(); // Initialize if needed
+            }
+            simulationStep(); // Perform a single generation step
+        });
+
+        applySettingsButton.addEventListener('click', () => {
+            applyCurrentSettingsAndReset(); // Apply all settings from inputs and reset
+            showModal("All settings applied and grid has been reset. 👍");
+        });
+        
+        // When the rule set is changed in the dropdown
+        ruleSetSelect.addEventListener('change', (event) => {
+            console.log("Rule set dropdown changed to:", event.target.value);
+            // Changing rule set implies a full reset with the new rules.
+            // applyCurrentSettingsAndReset will read the new value from ruleSetSelect.
+            applyCurrentSettingsAndReset(); 
+            showModal(`Rule set changed to "${event.target.value}". Grid reset.`);
+        });
+
+        // Allow clicking on canvas to toggle cell state (alive/dead) when simulation is stopped
+        canvas.addEventListener('click', (event) => {
+            if (isRunning) {
+                showModal("Please stop the simulation to edit cells. ✋");
+                return;
+            }
+            if (!grid || numCols === 0 || numRows === 0) return; // Grid not initialized or has no dimensions
+
+            const rect = canvas.getBoundingClientRect(); // Get canvas position and size
+            // Calculate click coordinates relative to the canvas
+            const clickX = event.clientX - rect.left;
+            const clickY = event.clientY - rect.top;
+
+            // Convert click coordinates to grid cell coordinates
+            const x = Math.floor(clickX / cellSize);
+            const y = Math.floor(clickY / cellSize);
+
+            // Check if the click is within the grid boundaries
+            if (x >= 0 && x < numCols && y >= 0 && y < numRows) {
+                grid[x][y] = grid[x][y] === 1 ? 0 : 1; // Toggle cell state
+                drawGrid(); // Redraw to show the change immediately
+                generation = 0; // Reset generation count as the pattern is manually changed
+                updateGenerationCount();
+            }
+        });
+        
+        // Initial setup when the page loads
+        window.addEventListener('load', () => {
+            console.log("Window loaded. Initializing Game of Life. 🚀");
+            populateRuleSetDropdown();    // Fill the rule set dropdown
+            initializeGameValues();       // Set initial JS variables from HTML inputs/defaults
+            applyCurrentSettingsAndReset(); // Create canvas, grid, and draw initial random state
+            stopButton.disabled = true;   // Simulation is initially stopped
+        });
+
+    </script>
+</body>
+</html>
