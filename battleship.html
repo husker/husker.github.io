@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Battleship AI Solver</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .grid-cell {
+            width: 36px; 
+            height: 36px; 
+            border: 1px solid #2c5282; /* Tailwind's blue-800. */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 18px; 
+            font-weight: bold;
+            transition: background-color 0.3s ease, color 0.3s ease; 
+            box-sizing: border-box; 
+            color: white; 
+        }
+        .cell-empty { background-color: #e0f2fe; /* sky-100 */ color: #374151; }
+        .cell-empty:hover { background-color: #bae6fd; /* sky-200 */ }
+        .cell-miss { background-color: #60a5fa; /* blue-400 */ } 
+        .cell-highlight { box-shadow: 0 0 0 3px #fbbf24; /* amber-400 */ z-index:10; }
+
+        .label-cell {
+            width: 36px; 
+            height: 36px; 
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            color: white; 
+            font-size: 0.875rem; /* 14px */
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            transition: all 0.2s ease-in-out;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .btn-primary {
+            background-color: #3b82f6; /* blue-500 */
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: #2563eb; /* blue-600 */
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        .btn-secondary {
+            background-color: #6b7280; /* gray-500 */
+            color: white;
+        }
+        .btn-secondary:hover {
+            background-color: #4b5563; /* gray-600 */
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+         .btn-success {
+            background-color: #22c55e; /* green-500 */
+            color: white;
+        }
+        .btn-success:hover {
+            background-color: #16a34a; /* green-600 */
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        .disabled-btn {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .disabled-btn:hover {
+            transform: none;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        /* Custom style for select dropdown */
+        select {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23007AFF%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E');
+            background-repeat: no-repeat;
+            background-position: right .7em top 50%;
+            background-size: .65em auto;
+            padding-right: 2.5em; /* Ensure space for arrow */
+        }
+
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 flex flex-col items-center justify-center min-h-screen p-4">
+
+    <div class="bg-white p-6 md:p-8 rounded-xl shadow-2xl w-full max-w-3xl">
+        <header class="mb-6 text-center">
+            <h1 class="text-3xl md:text-4xl font-bold text-blue-600">Battleship AI Solver</h1>
+        </header>
+
+        <div class="text-center mb-4">
+            <label for="algorithm-select" class="mr-2 font-semibold text-slate-700">Solver Algorithm:</label>
+            <select id="algorithm-select" class="p-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 bg-white">
+                <option value="probability" selected>Probability Density + Target</option>
+                <option value="random">Random Search + Target</option>
+                <option value="parity">Systematic Parity Search + Target</option>
+            </select>
+        </div>
+
+        <div id="game-board-area" class="mx-auto mb-6 w-min">
+            </div>
+
+        <div id="info-panel" class="text-center mb-6 space-y-2">
+            <p class="text-lg">Turns: <span id="turns-count" class="font-semibold text-blue-600">0</span></p>
+            <p id="message-area" class="text-md text-slate-600 h-6"></p>
+        </div>
+
+        <div id="controls" class="flex flex-col sm:flex-row justify-center gap-3 mb-4">
+            <button id="start-reset-button" class="btn btn-primary">Start Game</button>
+            <button id="next-move-button" class="btn btn-secondary" disabled>Next AI Move</button>
+            <button id="auto-play-button" class="btn btn-success" disabled>Auto-Play</button>
+        </div>
+        
+        <div id="ai-thoughts-panel" class="mt-4 p-4 bg-slate-50 rounded-lg border border-slate-200 text-sm">
+            <h3 class="font-semibold text-slate-700 mb-2">AI State:</h3>
+            <p id="ai-mode" class="text-slate-600">Mode: Idle</p>
+            <p id="ships-to-find" class="text-slate-600">Ships remaining: N/A</p>
+        </div>
+
+    </div>
+
+    <script>
+        // --- Game Configuration ---
+        const BOARD_SIZE = 10;
+        const SHIP_CONFIG = {
+            "Carrier": 5,
+            "Battleship": 4,
+            "Cruiser": 3,
+            "Submarine": 3,
+            "Destroyer": 2
+        };
+
+        const SHIP_COLOR_CLASSES = {
+            "Carrier": "bg-red-500",
+            "Battleship": "bg-yellow-600", 
+            "Cruiser": "bg-purple-500",
+            "Submarine": "bg-orange-500",
+            "Destroyer": "bg-teal-500",
+        };
+
+        // --- Cell State Constants ---
+        const STATE_EMPTY = '~';
+        const STATE_MISS = 'M';
+        const STATE_HIT = 'H';
+        const STATE_SUNK = 'S';
+
+        const createCellState = (state, shipName = null) => ({ state, shipName });
+
+        // --- Global Game State Variables ---
+        let gameBoard; 
+        let aiSolver;
+        let turns = 0;
+        let gameActive = false;
+        let autoPlayInterval = null;
+        let lastShotCell = null;
+        let actualGridElement = null; 
+
+        // --- DOM Elements ---
+        const gameBoardArea = document.getElementById('game-board-area'); 
+        const turnsCountEl = document.getElementById('turns-count');
+        const messageAreaEl = document.getElementById('message-area');
+        const startResetButton = document.getElementById('start-reset-button');
+        const nextMoveButton = document.getElementById('next-move-button');
+        const autoPlayButton = document.getElementById('auto-play-button');
+        const aiModeEl = document.getElementById('ai-mode');
+        const shipsToFindEl = document.getElementById('ships-to-find');
+        const algorithmSelectEl = document.getElementById('algorithm-select');
+
+
+        // --- BattleshipGame Class (JavaScript version) ---
+        class BattleshipGame {
+            constructor(shipConfig, boardSize) {
+                this.boardSize = boardSize;
+                this.shipConfig = shipConfig;
+                this.board = Array(boardSize).fill(null).map(() => Array(boardSize).fill(null).map(() => createCellState(STATE_EMPTY)));
+                this.ships = []; 
+                this._placeShipsRandomly();
+            }
+
+            _isValidCoord(r, c) {
+                return r >= 0 && r < this.boardSize && c >= 0 && c < this.boardSize;
+            }
+
+            _placeShipsRandomly() {
+                this.ships = []; 
+                const placedShipCells = new Set(); 
+
+                for (const [name, size] of Object.entries(this.shipConfig)) {
+                    let placedCurrentShip = false;
+                    let attempts = 0; 
+                    while (!placedCurrentShip && attempts < 200) { 
+                        attempts++;
+                        const orientation = Math.random() < 0.5 ? 'horizontal' : 'vertical';
+                        let r_start, c_start;
+                        const currentCoords = [];
+                        
+                        if (orientation === 'horizontal') {
+                            r_start = Math.floor(Math.random() * this.boardSize);
+                            c_start = Math.floor(Math.random() * (this.boardSize - size + 1));
+                            for (let i = 0; i < size; i++) currentCoords.push([r_start, c_start + i]);
+                        } else { 
+                            r_start = Math.floor(Math.random() * (this.boardSize - size + 1));
+                            c_start = Math.floor(Math.random() * this.boardSize);
+                            for (let i = 0; i < size; i++) currentCoords.push([r_start + i, c_start]);
+                        }
+
+                        let canPlaceThisShip = true;
+                        if (!currentCoords.every(([nr, nc]) => this._isValidCoord(nr, nc))) {
+                            canPlaceThisShip = false; 
+                        } else {
+                            for (const coord of currentCoords) {
+                                if (placedShipCells.has(JSON.stringify(coord))) {
+                                    canPlaceThisShip = false;
+                                    break;
+                                }
+                            }
+                        }
+                        
+                        if (canPlaceThisShip) {
+                            this.ships.push({ name, size, coords: currentCoords, hits: new Set() });
+                            currentCoords.forEach(coord => placedShipCells.add(JSON.stringify(coord)));
+                            placedCurrentShip = true;
+                        }
+                    }
+                    if (!placedCurrentShip) {
+                        console.error(`Could not place ship: ${name} of size ${size} after ${attempts} attempts.`);
+                    }
+                }
+            }
+
+            shoot(r, c) {
+                if (!this._isValidCoord(r,c)) {
+                    console.error("Game received invalid shot coordinates:", r, c);
+                    return ['MISS', null]; 
+                }
+
+                const cellObject = this.board[r][c];
+
+                if (cellObject.state === STATE_SUNK) return ['MISS', null]; 
+                if (cellObject.state === STATE_MISS) return ['MISS', null];         
+                
+                if (cellObject.state === STATE_HIT) {
+                    const hitShip = this.ships.find(ship => ship.name === cellObject.shipName);
+                    if (hitShip && hitShip.hits.size === hitShip.size) {
+                         this.board[r][c] = createCellState(STATE_SUNK, cellObject.shipName); 
+                         return ['MISS', null]; 
+                    }
+                    return ['HIT', { shipName: cellObject.shipName }]; 
+                }
+                
+                for (const ship of this.ships) {
+                    const coordStr = JSON.stringify([r,c]); 
+                    if (ship.coords.some(sc => JSON.stringify(sc) === coordStr)) {
+                        ship.hits.add(coordStr); 
+                        this.board[r][c] = createCellState(STATE_HIT, ship.name);  
+
+                        if (ship.hits.size === ship.size) { 
+                            ship.coords.forEach(([sr, sc]) => {
+                                if(this._isValidCoord(sr,sc)) this.board[sr][sc] = createCellState(STATE_SUNK, ship.name);
+                            });
+                            return ['SUNK', { name: ship.name, size: ship.size, coords: ship.coords }];
+                        }
+                        return ['HIT', { shipName: ship.name }]; 
+                    }
+                }
+
+                this.board[r][c] = createCellState(STATE_MISS); 
+                return ['MISS', null]; 
+            }
+
+            allSunk() {
+                if (this.ships.length === 0 && Object.keys(SHIP_CONFIG).length > 0) return false; 
+                if (this.ships.length === 0 && Object.keys(SHIP_CONFIG).length === 0) return true; 
+                return this.ships.every(ship => ship.hits.size === ship.size);
+            }
+        }
+
+        // --- BattleshipSolverAI Class (JavaScript version) ---
+        class BattleshipSolverAI {
+            constructor(shipConfig, boardSize, strategy = "probability") { // Added strategy parameter
+                this.boardSize = boardSize;
+                this.shipLengthsToFind = Object.values(shipConfig).sort((a, b) => b - a);
+                this.aiBoardView = Array(boardSize).fill(null).map(() => Array(boardSize).fill(null).map(() => createCellState(STATE_EMPTY)));
+                this.targetingModeData = null; 
+                this.strategy = strategy;
+
+                if (this.strategy === "parity") {
+                    this._initializeParitySearch();
+                }
+            }
+
+            _initializeParitySearch() {
+                this.parityShotOrder = [];
+                let parityCellsP0 = []; // (r+c) % 2 === 0
+                let parityCellsP1 = []; // (r+c) % 2 === 1
+                for (let r = 0; r < this.boardSize; r++) {
+                    for (let c = 0; c < this.boardSize; c++) {
+                        if ((r + c) % 2 === 0) {
+                            parityCellsP0.push([r,c]);
+                        } else {
+                            parityCellsP1.push([r,c]);
+                        }
+                    }
+                }
+                // Shuffle within parities for some variance, then concatenate
+                // For simplicity now, just fixed order: P0 then P1
+                this.parityShotOrder = parityCellsP0.concat(parityCellsP1);
+                this.parityShotOrderIndex = 0;
+            }
+
+
+            _isValidCoord(r, c) {
+                return r >= 0 && r < this.boardSize && c >= 0 && c < this.boardSize;
+            }
+
+            _calculateProbabilityDensity() {
+                const probBoard = Array(this.boardSize).fill(null).map(() => Array(this.boardSize).fill(0));
+                for (const shipLen of this.shipLengthsToFind) {
+                    for (let r_idx = 0; r_idx < this.boardSize; r_idx++) { 
+                        for (let c_idx = 0; c_idx <= this.boardSize - shipLen; c_idx++) { 
+                            let possible = true;
+                            const currentShipCoords = [];
+                            for (let i = 0; i < shipLen; i++) {
+                                currentShipCoords.push([r_idx, c_idx + i]);
+                                const cellState = this.aiBoardView[r_idx][c_idx + i].state;
+                                if (cellState === STATE_MISS || cellState === STATE_SUNK) {
+                                    possible = false; break;
+                                }
+                            }
+                            if (possible) currentShipCoords.forEach(([pr, pc]) => probBoard[pr][pc]++);
+                        }
+                    }
+                    for (let c_idx = 0; c_idx < this.boardSize; c_idx++) { 
+                        for (let r_idx = 0; r_idx <= this.boardSize - shipLen; r_idx++) { 
+                            let possible = true;
+                            const currentShipCoords = [];
+                            for (let i = 0; i < shipLen; i++) {
+                                currentShipCoords.push([r_idx + i, c_idx]);
+                                const cellState = this.aiBoardView[r_idx + i][c_idx].state;
+                                if (cellState === STATE_MISS || cellState === STATE_SUNK) {
+                                    possible = false; break;
+                                }
+                            }
+                            if (possible) currentShipCoords.forEach(([pr, pc]) => probBoard[pr][pc]++);
+                        }
+                    }
+                }
+                return probBoard;
+            }
+            
+            _getParityFilteredShots(candidates) { // Used by Probability strategy
+                const minShipLen = this.shipLengthsToFind.length > 0 ? Math.min(...this.shipLengthsToFind) : 1;
+                if (minShipLen > 1 && turns > 3 && candidates.length > 5) { // Apply only if useful
+                    const parityTargets = [];
+                    const targetParity = (turns % 2); 
+                    for (const [r_coord, c_coord] of candidates) { 
+                        if ((r_coord + c_coord) % 2 === targetParity) {
+                           parityTargets.push([r_coord,c_coord]);
+                        }
+                    }
+                    if (parityTargets.length > 0) return parityTargets;
+                }
+                return candidates; 
+            }
+
+            _getTargetModeShot() {
+                if (!this.targetingModeData) return null;
+                const data = this.targetingModeData;
+                const confirmedHits = Array.from(data.confirmedHits).map(JSON.parse).sort((a,b) => a[0] !== b[0] ? a[0] - b[0] : a[1] - b[1]);
+
+                if (confirmedHits.length === 1) {
+                    const [r_hit, c_hit] = confirmedHits[0]; 
+                    const potentialShots = [[r_hit - 1, c_hit], [r_hit + 1, c_hit], [r_hit, c_hit - 1], [r_hit, c_hit + 1]];
+                    for (const [pr, pc] of potentialShots) {
+                        if (this._isValidCoord(pr, pc) && this.aiBoardView[pr][pc].state === STATE_EMPTY) return [pr, pc];
+                    }
+                    return null;
+                }
+
+                const [firstR, firstC] = confirmedHits[0];
+                const [lastR, lastC] = confirmedHits[confirmedHits.length - 1];
+
+                if (!data.orientation) {
+                    data.orientation = firstR === lastR ? 'H' : 'V';
+                }
+                
+                const potentialShots = [];
+                if (data.orientation === 'H') {
+                    if (!data.triedNegative) potentialShots.push([firstR, firstC - 1]);
+                    if (!data.triedPositive) potentialShots.push([lastR, lastC + 1]);
+                } else { 
+                    if (!data.triedNegative) potentialShots.push([firstR - 1, firstC]);
+                    if (!data.triedPositive) potentialShots.push([lastR + 1, lastC]);
+                }
+
+                for (const [pr, pc] of potentialShots) {
+                    if (this._isValidCoord(pr, pc) && this.aiBoardView[pr][pc].state === STATE_EMPTY) return [pr, pc];
+                }
+                return null; 
+            }
+            
+            _chooseShot_ProbabilitySearch() {
+                aiModeEl.textContent = "Mode: Searching (Probability)";
+                const probBoard = this._calculateProbabilityDensity();
+                let maxProb = -1;
+                let candidateCells = [];
+
+                for (let r_loop = 0; r_loop < this.boardSize; r_loop++) { 
+                    for (let c_loop = 0; c_loop < this.boardSize; c_loop++) { 
+                        if (this.aiBoardView[r_loop][c_loop].state === STATE_EMPTY) { 
+                            if (probBoard[r_loop][c_loop] > maxProb) {
+                                maxProb = probBoard[r_loop][c_loop];
+                                candidateCells = [[r_loop, c_loop]];
+                            } else if (probBoard[r_loop][c_loop] === maxProb) {
+                                candidateCells.push([r_loop, c_loop]);
+                            }
+                        }
+                    }
+                }
+                if (candidateCells.length === 0) return null; 
+
+                const parityFilteredCandidates = this._getParityFilteredShots(candidateCells);
+                 // Use parity filtered if it provides a smaller, non-empty set of good candidates
+                if (parityFilteredCandidates.length > 0 && parityFilteredCandidates.length < candidateCells.length) {
+                     aiModeEl.textContent = "Mode: Searching (Prob + Parity)";
+                     return parityFilteredCandidates[Math.floor(Math.random() * parityFilteredCandidates.length)];
+                }
+                return candidateCells[Math.floor(Math.random() * candidateCells.length)];
+            }
+
+            _chooseShot_RandomSearch() {
+                aiModeEl.textContent = "Mode: Searching (Random)";
+                const emptyCells = [];
+                for (let r = 0; r < this.boardSize; r++) {
+                    for (let c = 0; c < this.boardSize; c++) {
+                        if (this.aiBoardView[r][c].state === STATE_EMPTY) {
+                            emptyCells.push([r, c]);
+                        }
+                    }
+                }
+                if (emptyCells.length === 0) return null;
+                return emptyCells[Math.floor(Math.random() * emptyCells.length)];
+            }
+
+            _chooseShot_ParitySearch() {
+                aiModeEl.textContent = "Mode: Searching (Systematic Parity)";
+                 while(this.parityShotOrderIndex < this.parityShotOrder.length) {
+                    const [r,c] = this.parityShotOrder[this.parityShotOrderIndex];
+                    this.parityShotOrderIndex++; // Increment for next time
+                    if (this._isValidCoord(r,c) && this.aiBoardView[r][c].state === STATE_EMPTY) {
+                        return [r,c];
+                    }
+                }
+                // Fallback if systematic list exhausted or yielded no empty cells
+                aiModeEl.textContent = "Mode: Searching (Parity Fallback - Random)";
+                return this._chooseShot_RandomSearch(); 
+            }
+
+
+            chooseShot() {
+                let targetShot = this._getTargetModeShot();
+                if (targetShot) {
+                    aiModeEl.textContent = "Mode: Targeting";
+                    return targetShot;
+                }
+
+                // Search Mode based on strategy
+                switch (this.strategy) {
+                    case "random":
+                        return this._chooseShot_RandomSearch();
+                    case "parity":
+                        return this._chooseShot_ParitySearch();
+                    case "probability":
+                    default:
+                        return this._chooseShot_ProbabilitySearch();
+                }
+            }
+
+            recordShotResult(r_shot, c_shot, result, details) { 
+                const coordStr = JSON.stringify([r_shot, c_shot]);
+                const currentCellInAIView = this.aiBoardView[r_shot][c_shot]; 
+
+                if (result === 'MISS') {
+                    if (currentCellInAIView.state === STATE_EMPTY) { 
+                        this.aiBoardView[r_shot][c_shot] = createCellState(STATE_MISS);
+                    }
+                    if (this.targetingModeData) {
+                        const confirmedHits = Array.from(this.targetingModeData.confirmedHits).map(JSON.parse).sort((a,b) => a[0] !== b[0] ? a[0] - b[0] : a[1] - b[1]);
+                        if (confirmedHits.length > 0) {
+                            const [firstHitR, firstHitC] = confirmedHits[0]; 
+                            const lastHitR = confirmedHits[confirmedHits.length-1][0];
+                            const lastHitC = confirmedHits[confirmedHits.length-1][1];
+
+                            if (this.targetingModeData.orientation === 'H') {
+                                if (c_shot < firstHitC) this.targetingModeData.triedNegative = true;
+                                else if (c_shot > lastHitC) this.targetingModeData.triedPositive = true;
+                            } else if (this.targetingModeData.orientation === 'V') {
+                                if (r_shot < firstHitR) this.targetingModeData.triedNegative = true;
+                                else if (r_shot > lastHitR) this.targetingModeData.triedPositive = true;
+                            }
+                        }
+                        if (this._getTargetModeShot() === null && 
+                            ( (this.targetingModeData.triedNegative && this.targetingModeData.triedPositive) || confirmedHits.length === 1) ) {
+                             this.targetingModeData = null;
+                        }
+                    }
+                } else if (result === 'HIT') { 
+                    this.aiBoardView[r_shot][c_shot] = createCellState(STATE_HIT, details.shipName);
+                    if (!this.targetingModeData || (this.targetingModeData && this.targetingModeData.shipName !== details.shipName) ) {
+                        // Start new targeting if not in targeting mode OR if hit a different ship
+                        this.targetingModeData = { 
+                            firstHit: [r_shot,c_shot], 
+                            confirmedHits: new Set([coordStr]), 
+                            orientation: null, 
+                            triedPositive: false, 
+                            triedNegative: false,
+                            shipName: details.shipName 
+                        };
+                    } else { // Continue targeting the same ship
+                        this.targetingModeData.confirmedHits.add(coordStr);
+                        this.targetingModeData.triedPositive = false; 
+                        this.targetingModeData.triedNegative = false;
+                    }
+                } else if (result === 'SUNK') { 
+                    details.coords.forEach(([sr, sc]) => {
+                        if(this._isValidCoord(sr,sc)) this.aiBoardView[sr][sc] = createCellState(STATE_SUNK, details.name);
+                    });
+                    const sunkSize = details.size;
+                    const indexToRemove = this.shipLengthsToFind.indexOf(sunkSize);
+                    if (indexToRemove > -1) this.shipLengthsToFind.splice(indexToRemove, 1);
+                    
+                    // If the sunk ship was the one being targeted, exit targeting mode
+                    if (this.targetingModeData && this.targetingModeData.shipName === details.name) {
+                        this.targetingModeData = null;
+                    }
+                }
+                shipsToFindEl.textContent = `Ships remaining: ${this.shipLengthsToFind.length > 0 ? this.shipLengthsToFind.join(', ') : 'None'}`;
+            }
+        }
+
+        // --- UI Rendering Functions ---
+        function createBoardGrid() {
+            gameBoardArea.innerHTML = ''; 
+
+            const boardWrapper = document.createElement('div');
+            boardWrapper.className = 'inline-block bg-blue-500 p-2 rounded-lg shadow-xl'; 
+
+            const topLabelsContainer = document.createElement('div');
+            topLabelsContainer.className = 'flex ml-[36px]'; 
+
+            for (let i = 0; i < BOARD_SIZE; i++) {
+                const label = document.createElement('div');
+                label.className = 'label-cell'; 
+                label.textContent = String.fromCharCode(65 + i); 
+                topLabelsContainer.appendChild(label);
+            }
+            boardWrapper.appendChild(topLabelsContainer);
+
+            const middleSection = document.createElement('div');
+            middleSection.className = 'flex'; 
+
+            const sideLabelsContainer = document.createElement('div');
+            sideLabelsContainer.className = 'flex flex-col'; 
+
+            for (let i = 0; i < BOARD_SIZE; i++) {
+                const label = document.createElement('div');
+                label.className = 'label-cell';
+                label.textContent = i + 1; 
+                sideLabelsContainer.appendChild(label);
+            }
+            middleSection.appendChild(sideLabelsContainer);
+
+            actualGridElement = document.createElement('div'); 
+            actualGridElement.id = 'actual-game-grid';
+            actualGridElement.className = 'grid grid-cols-10 rounded-md overflow-hidden'; 
+                                                                                            
+            for (let r_grid = 0; r_grid < BOARD_SIZE; r_grid++) { 
+                for (let c_grid = 0; c_grid < BOARD_SIZE; c_grid++) { 
+                    const cell = document.createElement('div');
+                    cell.classList.add('grid-cell', 'cell-empty'); 
+                    cell.dataset.r = r_grid;
+                    cell.dataset.c = c_grid;
+                    actualGridElement.appendChild(cell);
+                }
+            }
+            middleSection.appendChild(actualGridElement);
+            boardWrapper.appendChild(middleSection);
+            gameBoardArea.appendChild(boardWrapper);
+        }
+
+        function updateBoardDisplay() {
+            if (!actualGridElement) return; 
+
+            if (lastShotCell) {
+                lastShotCell.classList.remove('cell-highlight');
+                lastShotCell = null; 
+            }
+
+            for (let r_disp = 0; r_disp < BOARD_SIZE; r_disp++) { 
+                for (let c_disp = 0; c_disp < BOARD_SIZE; c_disp++) { 
+                    const cellData = aiSolver.aiBoardView[r_disp][c_disp];
+                    const cellEl = actualGridElement.querySelector(`[data-r='${r_disp}'][data-c='${c_disp}']`);
+                    if (cellEl) { 
+                        cellEl.className = 'grid-cell'; 
+                        
+                        let shipColorClass = '';
+                        if (cellData.shipName && SHIP_COLOR_CLASSES[cellData.shipName]) {
+                            shipColorClass = SHIP_COLOR_CLASSES[cellData.shipName];
+                        }
+
+                        switch (cellData.state) {
+                            case STATE_MISS: 
+                                cellEl.classList.add('cell-miss'); 
+                                cellEl.textContent = '●'; 
+                                break;
+                            case STATE_HIT: 
+                                if (shipColorClass) cellEl.classList.add(shipColorClass);
+                                else cellEl.classList.add('bg-pink-500'); 
+                                cellEl.textContent = '🔥'; 
+                                break;
+                            case STATE_SUNK: 
+                                if (shipColorClass) cellEl.classList.add(shipColorClass);
+                                else cellEl.classList.add('bg-gray-500'); 
+                                cellEl.classList.add('opacity-75'); 
+                                cellEl.textContent = '⚓'; 
+                                break;
+                            default: // STATE_EMPTY
+                                cellEl.classList.add('cell-empty'); 
+                                cellEl.textContent = ''; 
+                                break;
+                        }
+                    }
+                }
+            }
+        }
+        
+        function highlightShotCell(r_hl, c_hl) { 
+            if (!actualGridElement) return;
+            const cellEl = actualGridElement.querySelector(`[data-r='${r_hl}'][data-c='${c_hl}']`);
+            if (cellEl) {
+                if (lastShotCell) { 
+                    lastShotCell.classList.remove('cell-highlight');
+                }
+                cellEl.classList.add('cell-highlight');
+                lastShotCell = cellEl;
+            }
+        }
+
+        function updateGameInfo(message = "") {
+            turnsCountEl.textContent = turns;
+            messageAreaEl.textContent = message;
+            if (messageAreaEl) {
+                if(message.trim() !== "") messageAreaEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+        }
+        
+        function updateButtonStates(isGameActive, isGameOver = false) {
+            const buttons = [startResetButton, nextMoveButton, autoPlayButton];
+            const algoSelect = algorithmSelectEl;
+
+            buttons.forEach(btn => {
+                btn.disabled = false; 
+                btn.classList.remove('disabled-btn');
+            });
+            algoSelect.disabled = false;
+            algoSelect.classList.remove('disabled-btn');
+
+
+            if (isGameOver) {
+                startResetButton.textContent = 'Play Again?';
+                nextMoveButton.disabled = true; nextMoveButton.classList.add('disabled-btn');
+                autoPlayButton.disabled = true; autoPlayButton.classList.add('disabled-btn');
+                algoSelect.disabled = false; // Allow changing for next game
+                algoSelect.classList.remove('disabled-btn');
+                if (autoPlayInterval) stopAutoPlay();
+            } else if (isGameActive) {
+                startResetButton.textContent = 'Reset Game';
+                nextMoveButton.disabled = (autoPlayInterval !== null); 
+                if (nextMoveButton.disabled) nextMoveButton.classList.add('disabled-btn');
+                algoSelect.disabled = true; // Don't change algo mid-game
+                algoSelect.classList.add('disabled-btn');
+
+            } else { 
+                startResetButton.textContent = 'Start Game';
+                nextMoveButton.disabled = true; nextMoveButton.classList.add('disabled-btn');
+                autoPlayButton.disabled = true; autoPlayButton.classList.add('disabled-btn');
+                algoSelect.disabled = false;
+                algoSelect.classList.remove('disabled-btn');
+            }
+        }
+
+        function startGame() {
+            if (autoPlayInterval) stopAutoPlay();
+            
+            gameBoard = new BattleshipGame(SHIP_CONFIG, BOARD_SIZE);
+            if (gameBoard.ships.length !== Object.keys(SHIP_CONFIG).length) {
+                updateGameInfo("Error placing ships. Please try starting again.");
+                gameActive = false;
+                updateButtonStates(false, true); 
+                return;
+            }
+            
+            const selectedAlgorithm = algorithmSelectEl.value;
+            aiSolver = new BattleshipSolverAI(SHIP_CONFIG, BOARD_SIZE, selectedAlgorithm);
+            
+            turns = 0;
+            gameActive = true;
+            if(lastShotCell) lastShotCell.classList.remove('cell-highlight'); 
+            lastShotCell = null;
+            
+            createBoardGrid(); 
+            updateBoardDisplay(); 
+            updateGameInfo("New game started. AI is ready.");
+            aiModeEl.textContent = "Mode: Idle";
+            shipsToFindEl.textContent = `Ships remaining: ${aiSolver.shipLengthsToFind.join(', ') || 'None'}`;
+            updateButtonStates(true);
+        }
+
+        function performAIMove() {
+            if (!gameActive || (gameBoard && gameBoard.allSunk())) {
+                if (gameBoard && gameBoard.allSunk() && gameActive) {
+                     updateGameInfo(`All ships sunk in ${turns} turns!`);
+                     gameActive = false;
+                     updateButtonStates(false, true);
+                     if (autoPlayInterval) stopAutoPlay();
+                }
+                return;
+            }
+
+            turns++;
+            const shotCoords = aiSolver.chooseShot();
+            if (!shotCoords) {
+                if (gameBoard && gameBoard.allSunk()) { 
+                    updateGameInfo(`All ships sunk in ${turns-1} turns! (No more moves possible by AI)`);
+                } else {
+                    updateGameInfo("AI cannot find a move. Game might be stuck or over.");
+                }
+                gameActive = false;
+                updateButtonStates(false, true); 
+                return;
+            }
+
+            const [r_move, c_move] = shotCoords; 
+            highlightShotCell(r_move,c_move); 
+            
+            setTimeout(() => {
+                if (!gameBoard) return; 
+
+                const [result, details] = gameBoard.shoot(r_move, c_move); 
+                aiSolver.recordShotResult(r_move, c_move, result, details);
+                updateBoardDisplay(); 
+
+                let message = `Turn ${turns}: AI shoots at (${String.fromCharCode(65 + c_move)}${r_move + 1})... ${result}!`;
+                if (result === 'SUNK') {
+                    message += ` ${details.name} sunk!`;
+                } else if (result === 'HIT' && details && details.shipName) { // Check details and shipName exist
+                    message += ` (on ${details.shipName})`;
+                }
+                updateGameInfo(message);
+
+                if (gameBoard.allSunk()) {
+                    updateGameInfo(`All ships sunk in ${turns} turns!`);
+                    gameActive = false;
+                    updateButtonStates(false, true); 
+                    if (autoPlayInterval) stopAutoPlay();
+                } else {
+                    updateButtonStates(true); 
+                }
+            }, 100); 
+        }
+
+        function startAutoPlay() {
+            if (autoPlayInterval) return; 
+            autoPlayButton.textContent = 'Stop Auto-Play';
+            autoPlayButton.classList.remove('btn-success');
+            autoPlayButton.classList.add('btn-secondary');
+            updateButtonStates(true); 
+
+            autoPlayInterval = setInterval(() => {
+                if (gameActive && (gameBoard && !gameBoard.allSunk()) ) { 
+                    performAIMove();
+                } else {
+                    stopAutoPlay();
+                    if (gameBoard && gameBoard.allSunk()) {
+                        if (gameActive) { 
+                             updateGameInfo(`All ships sunk in ${turns} turns!`);
+                             gameActive = false;
+                        }
+                        updateButtonStates(false, true);
+                    }
+                }
+            }, 400); 
+        }
+
+        function stopAutoPlay() {
+            clearInterval(autoPlayInterval);
+            autoPlayInterval = null;
+            autoPlayButton.textContent = 'Auto-Play';
+            autoPlayButton.classList.remove('btn-secondary');
+            autoPlayButton.classList.add('btn-success');
+            if (gameBoard) { 
+                updateButtonStates(gameActive && !gameBoard.allSunk(), gameBoard.allSunk());
+            } else {
+                updateButtonStates(false); 
+            }
+        }
+
+        startResetButton.addEventListener('click', startGame);
+        nextMoveButton.addEventListener('click', () => {
+            if (gameActive && !autoPlayInterval && gameBoard && !gameBoard.allSunk()) performAIMove();
+        });
+        autoPlayButton.addEventListener('click', () => {
+            if (!gameActive || (gameBoard && gameBoard.allSunk()) ) return; 
+            if (autoPlayInterval) {
+                stopAutoPlay();
+            } else {
+                startAutoPlay();
+            }
+        });
+
+        createBoardGrid(); 
+        updateGameInfo("Click 'Start Game' to begin.");
+        updateButtonStates(false); 
+
+    </script>
+</body>
+</html>
